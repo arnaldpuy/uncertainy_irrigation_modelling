@@ -80,7 +80,7 @@ selected.palette <- "Darjeeling1"
 
 # SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ##################################
 
-# Source all .R files in the "functions" folder ------------------------------------
+# Source all .R files in the "functions" folder --------------------------------
 
 r_functions <- list.files(path = here("functions"), pattern = "\\.R$", full.names = TRUE)
 lapply(r_functions, source)
@@ -303,58 +303,21 @@ plot_grid(a, b, ncol = 1, labels = "auto")
 
 isimip.full <- isimip.dt[social == "varsoc"][, context:= "historic"] %>%
   rbind(., isimip.future.dt[, context:= "prediction"], fill = TRUE) %>%
-  .[, social:= NULL] %>%
-  .[, estimation:= sum(V1), .(Continent, climate, context, model, year)]
+  .[, social:= NULL] 
+
+isimip.anova <- isimip.full[, .(estimation = sum(V1)), 
+                            .(Continent, climate, context, model, year)]
 
 # ARRANGE DATA #################################################################
 
 columns_to_factor <- c("Continent", "climate", "model")
 isimip.full[, (columns_to_factor):= lapply(.SD, as.factor), .SDcols = (columns_to_factor)]
+isimip.anova[, (columns_to_factor):= lapply(.SD, as.factor), .SDcols = (columns_to_factor)]
 
-# DEFINE MODEL #################################################################
+# RUN MODEL AND ANALYSIS OF VARIANCE ###########################################
 
-# Linear mixed-effects model with random intercept for year ------------------
-
-analysis_variance_fun <- function(dt) {
-  
-  model_lmm <- lmer(estimation ~ model + climate + (1 | year), data = dt)
-  
-  anova_res <- anova(model_lmm)
-  
-  # Extract variance components ------------------------------------------------
-  
-  var_comp <- as.data.frame(VarCorr(model_lmm))
-  residual_var <- attr(VarCorr(model_lmm), "sc")^2  # Residual variance
-  random_var <- var_comp$vcov[var_comp$grp == "year"]  # Year random effect variance
-  
-  # Calculate total variance ---------------------------------------------------
-  
-  fixed_effects_var <- sum(anova_res$`Sum Sq`)  # Sum of squares for all fixed effects
-  total_var <- fixed_effects_var + random_var + residual_var
-  
-  # Calculate proportion of variance explained ---------------------------------
-  
-  climate_var <- anova_res["climate", "Sum Sq"] / total_var  # Proportion due to climate
-  model_var <- anova_res["model", "Sum Sq"] / total_var  # Proportion due to model
-  residual_proportion <- residual_var / total_var  # Proportion of residual variance
-  random_effect_proportion <- random_var / total_var  # Proportion of variance due to random effect (year)
-  
-  # Return results -------------------------------------------------------------
-  
-  output <- data.table(
-    climate_variance = climate_var,
-    model_variance = model_var,
-    random_variance = random_effect_proportion,
-    residual_variance = residual_proportion
-  )
-  
-  return(output)
-  
-}
-
-# RUN MODEL ####################################################################
-
-results.dt <- isimip.full[, analysis_variance_fun(.SD), .(Continent, context)]
+results.dt <- isimip.anova[, analysis_variance_fun(.SD), .(Continent, context)]
+results.dt
 
 # PLOT RESULTS #################################################################
 
@@ -560,4 +523,73 @@ ggplot(merged.dt, aes(year, estimation, group = interaction(climate, model), col
 merged.dt[year %in% c(2030, 2040, 2050), 
           .(min = min(estimation), max = max(estimation)), .(Continent, year)] %>%
   .[, .(sum_min = sum(min), sum_max = sum(max)), year]
+```
+
+# Bibliographical study
+
+```{r naomi_data}
+
+# NAOMI DATASET ################################################################
+
+naomi.projected <- data.table(read.xlsx("naomi_projected.xlsx")) %>%
+  .[, study:= paste(author, climate.scenario, sep = ".")] %>%
+  .[, focus:= "projected"]
+
+naomi.current <- data.table(read.xlsx("naomi_current.xlsx")) %>%
+  .[, climate.scenario:= NA] %>%
+  .[, study:= paste(author, climate.scenario, sep = ".")] %>%
+  .[, focus:= "current"]
+
+naomi.full.dt <- rbind(naomi.current, naomi.projected)
+
+# CLEAN THE DATASET ############################################################
+
+colnames_vector <- c("title", "author", "region")
+
+# Remove leading and trailing spaces -------------------------------------------
+
+naomi.full.dt[, (colnames_vector):= lapply(.SD, trimws), .SDcols = (colnames_vector)]
+naomi.full.dt[, (colnames_vector):= lapply(.SD, str_squish), .SDcols = (colnames_vector)]
+
+# Lowercaps --------------------------------------------------------------------
+
+naomi.full.dt[, (colnames_vector):= lapply(.SD, tolower), .SDcols = (colnames_vector)]
+
+# Remove multiple spaces -------------------------------------------------------
+
+naomi.full.dt[, (colnames_vector):= lapply(.SD, function(x) 
+  gsub("\\s+", " ", x)), .SDcols = (colnames_vector)]
+
+# Correct America --------------------------------------------------------------
+
+naomi.full.dt[, region:= ifelse(region == "america", "americas", region)]
+
+# FEATURES OF THE DATASET ######################################################
+
+naomi.full.dt[, publication.date:= str_extract(author, "\\d{4}")]
+naomi.full.dt[, range.estimation:= ifelse(publication.date >= 1990 & publication.date < 2000, "1990-2000", 
+                                          ifelse(publication.date >= 2000 & publication.date < 2010, "2000-2010",
+                                                 "2010-2024"))]
+
+# RANGE ESTIMATION #############################################################
+
+naomi.full.dt[, range.estimation.year:= ifelse(estimation.year >= 1990 & estimation.year < 2010, "1990-2010", 
+                                               ifelse(estimation.year >= 2010 & publication.date < 2050, "2010-2050",
+                                                      "2050-2100"))]
+```
+
+```{r plot_naomi, dependson="naomi_data", fig.height=2.3, fig.width=5.4}
+
+# PLOT ALL ESTIMATIONS #########################################################
+
+naomi.full.dt[variable == "iww" & region == "global"] %>%
+  .[, .(author, study, estimation.year, value)] %>%
+  na.omit() %>%
+  ggplot(., aes(estimation.year, value, color = author, group = study)) +
+  geom_point() +
+  labs(x = "Year", y = bquote("km"^3)) +
+  scale_color_discrete(name = "") +
+  geom_line() +
+  theme_AP()
+
 ```

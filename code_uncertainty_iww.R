@@ -81,7 +81,8 @@ names(isimip.hist) <- paste(model.names, climate.scenarios, social.scenarios, se
 isimip.dt <- rbindlist(isimip.hist, idcol = "model") %>%
   na.omit() %>%
   .[, model:= factor(model)] %>%
-  .[, c("model", "climate", "social"):= tstrsplit(model, "/")]
+  .[, c("model", "climate", "social"):= tstrsplit(model, "/")] %>%
+  .[, V1:= ifelse(model == "matsiro", V1 / 100, V1)]
 
 fwrite(isimip.dt, "isimip.dt.csv")
 
@@ -659,11 +660,6 @@ spread_data <- naomi.full.dt %>%
   data.table() %>%
   .[range.estimation.year > 1995 & n > 1] %>%
   na.omit()
-
-
-
-
-
 
 ggplot(spread_data , aes(x = range.estimation.year, ymin = min, ymax = max, color = range.estimation)) +
   geom_pointrange(aes(y = (max + min) / 2), 

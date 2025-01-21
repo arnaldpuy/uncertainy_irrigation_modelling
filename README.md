@@ -1,4 +1,6 @@
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14710666.svg)](https://doi.org/10.5281/zenodo.14710666)
+
 # Uncertainty grows as irrigation modelling advances
 
 [Arnald Puy](https://www.arnaldpuy.com/), Nanxin Wei, Carmen Aguiló, Seth N. Linga

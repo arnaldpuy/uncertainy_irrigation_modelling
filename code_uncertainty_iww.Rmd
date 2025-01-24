@@ -1,5 +1,5 @@
 ---
-title: "Uncertainties in the estimation of global irrigation water withdrawals"
+title: "Uncertainty grows as irrigation modelling advances"
 subtitle: "R code"
 author: "Arnald Puy"
 header-includes:
@@ -43,7 +43,8 @@ knitr::opts_chunk$set(echo = TRUE, dev = "pdf", cache = TRUE)
 
 sensobol::load_packages(c("openxlsx", "data.table", "tidyverse","cowplot", 
                           "benchmarkme", "parallel", "wesanderson", "scales", "ncdf4", 
-                          "countrycode", "rworldmap", "sp", "doParallel", "here", "lme4"))
+                          "countrycode", "rworldmap", "sp", "doParallel", "here", "lme4", 
+                          "microbenchmark"))
 
 # Create custom theme ----------------------------------------------------------
 
@@ -529,18 +530,16 @@ merged.dt[year %in% c(2030, 2040, 2050),
 
 ```{r naomi_data}
 
-# NAOMI DATASET ################################################################
+# NAOMI DATASET ###############################################################
 
-naomi.projected <- data.table(read.xlsx("naomi_projected.xlsx")) %>%
-  .[, study:= paste(author, climate.scenario, sep = ".")] %>%
+references.projected <- data.table(read.xlsx("references_projection.xlsx")) %>%
   .[, focus:= "projected"]
 
-naomi.current <- data.table(read.xlsx("naomi_current.xlsx")) %>%
-  .[, climate.scenario:= NA] %>%
-  .[, study:= paste(author, climate.scenario, sep = ".")] %>%
+references.current <- data.table(read.xlsx("references_current.xlsx")) %>%
   .[, focus:= "current"]
 
-naomi.full.dt <- rbind(naomi.current, naomi.projected)
+references.full.dt <- rbind(references.projected, references.current) %>%
+  .[, study:= paste(author, model, climate.scenario, sep = ".")] 
 
 # CLEAN THE DATASET ############################################################
 
@@ -548,48 +547,120 @@ colnames_vector <- c("title", "author", "region")
 
 # Remove leading and trailing spaces -------------------------------------------
 
-naomi.full.dt[, (colnames_vector):= lapply(.SD, trimws), .SDcols = (colnames_vector)]
-naomi.full.dt[, (colnames_vector):= lapply(.SD, str_squish), .SDcols = (colnames_vector)]
+references.full.dt[, (colnames_vector):= lapply(.SD, trimws), .SDcols = (colnames_vector)]
+references.full.dt[, (colnames_vector):= lapply(.SD, str_squish), .SDcols = (colnames_vector)]
 
 # Lowercaps --------------------------------------------------------------------
 
-naomi.full.dt[, (colnames_vector):= lapply(.SD, tolower), .SDcols = (colnames_vector)]
+references.full.dt[, (colnames_vector):= lapply(.SD, tolower), .SDcols = (colnames_vector)]
 
 # Remove multiple spaces -------------------------------------------------------
 
-naomi.full.dt[, (colnames_vector):= lapply(.SD, function(x) 
+references.full.dt[, (colnames_vector):= lapply(.SD, function(x) 
   gsub("\\s+", " ", x)), .SDcols = (colnames_vector)]
 
 # Correct America --------------------------------------------------------------
 
-naomi.full.dt[, region:= ifelse(region == "america", "americas", region)]
+references.full.dt[, region:= ifelse(region == "america", "americas", region)]
+
+# Extract the publication year -------------------------------------------------
+
+references.full.dt[, publication.date:= str_extract(author, "\\d{4}")] %>%
+  .[, publication.date:= as.numeric(publication.date)]
 
 # FEATURES OF THE DATASET ######################################################
 
-naomi.full.dt[, publication.date:= str_extract(author, "\\d{4}")]
-naomi.full.dt[, range.estimation:= ifelse(publication.date >= 1990 & publication.date < 2000, "1990-2000", 
+
+references.full.dt[, range.estimation:= ifelse(publication.date >= 1990 & publication.date < 2000, "1990-2000", 
                                           ifelse(publication.date >= 2000 & publication.date < 2010, "2000-2010",
                                                  "2010-2024"))]
 
 # RANGE ESTIMATION #############################################################
 
-naomi.full.dt[, range.estimation.year:= ifelse(estimation.year >= 1990 & estimation.year < 2010, "1990-2010", 
+references.full.dt[, range.estimation.year:= ifelse(estimation.year >= 1990 & estimation.year < 2010, "1990-2010", 
                                                ifelse(estimation.year >= 2010 & publication.date < 2050, "2010-2050",
                                                       "2050-2100"))]
 ```
 
-```{r plot_naomi, dependson="naomi_data", fig.height=2.3, fig.width=5.4}
+```{r naomi_features, dependson="naomi_data", fig.height=1.8, fig.width=2}
+
+# FEATURES OF THE DATASET ######################################################
+
+# Name of different studies ----------------------------------------------------
+
+sort(unique(references.full.dt$title))
+
+# Name of different studies per variable ---------------------------------------
+
+references.full.dt[, unique(title), variable] %>%
+  .[, .N, variable]
+
+# Cumulative sum of published studies ------------------------------------------
+
+dt <- references.full.dt[, .(title, publication.date)] %>%
+  .[!duplicated(.)] %>%
+  setorder(., publication.date) %>%
+  .[, .N, publication.date] %>%
+  .[, cumulative_sum := cumsum(N)]
+
+ggplot(dt, aes(publication.date, cumulative_sum)) +
+  geom_line() + 
+  geom_point(size = 0.7) + 
+  theme_AP() + 
+  labs(x = "Year", y = "Nº studies")
+
+# Only irrigation water withdrawal studies -------------------------------------
+
+references.full.dt[, .(title, publication.date, variable)] %>%
+  .[variable == "iww"] %>%
+  .[!duplicated(.)] %>%
+  setorder(., publication.date) %>%
+  .[, .N, publication.date] %>%
+  .[, cumulative_sum := cumsum(N)] %>%
+  ggplot(., aes(publication.date, cumulative_sum)) +
+  geom_line() + 
+  geom_point(size = 0.7) + 
+  theme_AP() + 
+  labs(x = "Year", y = "Nº studies")
+```
+
+```{r plot_naomi, dependson="naomi_data", fig.height=3, fig.width=6}
 
 # PLOT ALL ESTIMATIONS #########################################################
 
-naomi.full.dt[variable == "iww" & region == "global"] %>%
+def.alpha <- 0.3
+
+references.full.dt[variable == "iww" & region == "global"] %>%
   .[, .(author, study, estimation.year, value)] %>%
   na.omit() %>%
   ggplot(., aes(estimation.year, value, color = author, group = study)) +
-  geom_point() +
-  labs(x = "Year", y = bquote("km"^3)) +
+  geom_point(alpha = def.alpha, size = 0.2) +
+  labs(x = "Year", y = bquote("Km"^3)) +
   scale_color_discrete(name = "") +
-  geom_line() +
+  geom_line(alpha = def.alpha) +
   theme_AP()
 
+```
+
+\newpage
+
+# Session information
+
+```{r session_information}
+
+# SESSION INFORMATION ##########################################################
+
+sessionInfo()
+
+## Return the machine CPU ------------------------------------------------------
+
+cat("Machine:     "); print(get_cpu()$model_name)
+
+## Return number of true cores -------------------------------------------------
+
+cat("Num cores:   "); print(detectCores(logical = FALSE))
+
+## Return number of threads ---------------------------------------------------
+
+cat("Num threads: "); print(detectCores(logical = FALSE))
 ```

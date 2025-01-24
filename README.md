@@ -20,7 +20,7 @@ We provide all the functions needed to replicate our workflow in the ``functions
 
 This repository contains the data and files produced in this study. The file with
 ''current'' compiles studies whose water estimates are either historical or current.
-The file with ```projected'' include studies which project water-related variables 
+The file with ```projected'' include studies with water-related variables projected 
 into the future.
 
 * `references_current.xlsx`   

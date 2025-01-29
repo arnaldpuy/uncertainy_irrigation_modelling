@@ -1,12 +1,13 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14710666.svg)](https://doi.org/10.5281/zenodo.14710666)
 
-# Uncertainty grows as irrigation modelling advances
+# Uncertainty in global irrigation withdrawals persists after 50 years of research
 
-[Arnald Puy](https://www.arnaldpuy.com/), Nanxin Wei, Carmen Aguiló, Seth N. Linga
+[Arnald Puy](https://www.arnaldpuy.com/), Carmen Aguiló, Seth N. Linga, Naomi Clarke, Nanxin Wei
 
-This study compiles the estimations of irrigation water withdrawals done between
-1970 and 2024 and analyzes the spread of the uncertainty.
+This study compiles the estimations of irrigation water withdrawals produced between
+1970 and 2024 and analyzes the spread of the uncertainty to see if it has increased
+or decreased over time.
 
 ## Abstract
 
@@ -18,13 +19,23 @@ We provide all the functions needed to replicate our workflow in the ``functions
 
 ### Data
 
-This repository contains the data and files produced in this study. The file with
+#### Generated data
+
+The ''data'' folder contains the data and files produced in this study. The file named
 ''current'' compiles studies whose water estimates are either historical or current.
-The file with ```projected'' include studies with water-related variables projected 
+The file named ```projected'' includes studies with water-related variables projected 
 into the future.
 
 * `references_current.xlsx`   
 * `references_projected.xlsx`   
+
+#### Secondary data
+
+Since we also used secondary data, we refer the interested reader to the following
+links and repositories:
+
+* [ISI-MIP](https://www.isimip.org/)
+* [Khan et al 2023](https://www.nature.com/articles/s41597-023-02086-2)
 
 ### Code
 

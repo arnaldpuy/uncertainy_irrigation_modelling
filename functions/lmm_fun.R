@@ -1,8 +1,7 @@
 
-
 # LINEAR MIXED EFFECTS MODEL ###################################################
 
-analysis_variance_fun <- function(dt) {
+lmm_fun <- function(dt) {
   
   # LMM model ------------------------------------------------------------------
   

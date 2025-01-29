@@ -1,17 +1,17 @@
-## ----setup, include=FALSE---------------------------------------------------------------------------
+## ----setup, include=FALSE---------------------------------------------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE, dev = "pdf", cache = TRUE)
 
 
-## ----warning=FALSE, message=FALSE-------------------------------------------------------------------
+## ---- warning=FALSE, message=FALSE------------------------------------------------------------------------------
 
 #   PRELIMINARY FUNCTIONS ######################################################
 
 sensobol::load_packages(c("openxlsx", "data.table", "tidyverse","cowplot", 
                           "benchmarkme", "parallel", "wesanderson", "scales", "ncdf4", 
                           "countrycode", "rworldmap", "sp", "doParallel", "here", "lme4", 
-                          "microbenchmark"))
+                          "microbenchmark", "mgcv", "brms", "randomForest"))
 
-# Create custom theme ----------------------------------------------------------
+# Create custom theme -----------------------------------------------------------
 
 theme_AP <- function() {
   theme_bw() +
@@ -22,27 +22,27 @@ theme_AP <- function() {
           legend.key = element_rect(fill = "transparent",
                                     color = NA), 
           strip.background = element_rect(fill = "white"), 
-          legend.margin = margin(0.5, 0.1, 0.1, 0.1),
-          legend.box.margin = margin(0.2,-4,-7,-7), 
-          plot.margin = margin(3, 4, 0, 4), 
           legend.text = element_text(size = 7.3), 
           axis.title = element_text(size = 10),
           legend.key.width = unit(0.4, "cm"), 
           legend.key.height = unit(0.4, "cm"), 
+          legend.key.spacing.y = unit(0, "lines"),
+          legend.box.spacing = unit(0, "pt"),
           legend.title = element_text(size = 7.8), 
           axis.text.x = element_text(size = 7), 
           axis.text.y = element_text(size = 7), 
           axis.title.x = element_text(size = 7.3), 
-          axis.title.y = element_text(size = 7.3), 
+          axis.title.y = element_text(size = 7.3),
+          plot.title = element_text(size = 8),
           strip.text.x = element_text(size = 7.4)) 
 }
 
-# Select color palette ---------------------------------------------------------
+# Select color palette ----------------------------------------------------------
 
 selected.palette <- "Darjeeling1"
 
 
-## ----source_functions, warning=FALSE, message=FALSE, results='hide'---------------------------------
+## ----source_functions, warning=FALSE, message=FALSE, results='hide'---------------------------------------------
 
 # SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ##################################
 
@@ -53,7 +53,7 @@ lapply(r_functions, source)
 
 
 
-## ----isimip_data------------------------------------------------------------------------------------
+## ----isimip_data------------------------------------------------------------------------------------------------
 
 # RETRIEVE DATA FROM ISIMIP ####################################################
 
@@ -88,7 +88,7 @@ isimip.hist <- foreach(i = 1:length(files.directory),
 stopCluster(cl)
 
 
-## ----arrange_isimip_data, dependson="isimip_data"---------------------------------------------------
+## ----arrange_isimip_data, dependson="isimip_data"---------------------------------------------------------------
 
 # ARRANGE DATA #################################################################
 
@@ -113,11 +113,11 @@ fwrite(isimip.dt, "isimip.dt.csv")
 # varsoc: variable human impacts.
 
 
-## ----plot_isimip_dt_continent, dependson="arrange_isimip_data", fig.height=3.2----------------------
+## ----plot_isimip_dt_continent, dependson="arrange_isimip_data", fig.height=3.2----------------------------------
 
 # PLOT ISIMIP ##################################################################
 
-# Continental level -------------------------------------------------------------
+# Continental level ------------------------------------------------------------
 
 isimip.dt[, sum(V1, na.rm = TRUE), .(Continent, model, year, climate, social)] %>%
   ggplot(., aes(year, V1, group = interaction(climate, model), color = model, 
@@ -132,9 +132,9 @@ isimip.dt[, sum(V1, na.rm = TRUE), .(Continent, model, year, climate, social)] %
   theme(legend.position = "top")
 
 
-## ----plot_isimip_dt_global, dependson="arrange_isimip_data", fig.height=2.2, fig.width=3.7----------
+## ----plot_isimip_dt_global, dependson="arrange_isimip_data", fig.height=2.2, fig.width=3.7----------------------
 
-# Global level ------------------------------------------------------------------
+# Global level -----------------------------------------------------------------
 
 isimip.dt[, sum(V1, na.rm = TRUE), .(year, model, climate, social)] %>%
   ggplot(., aes(year, V1, group = interaction(climate, model), color = model)) +
@@ -145,7 +145,7 @@ isimip.dt[, sum(V1, na.rm = TRUE), .(year, model, climate, social)] %>%
   theme(legend.position = "top")
 
 
-## ----isimip_data_future-----------------------------------------------------------------------------
+## ----isimip_data_future-----------------------------------------------------------------------------------------
 
 # RETRIEVE PROJECTIONS FROM ISIMIP #############################################
 
@@ -179,7 +179,7 @@ isimip.future <- foreach(i = 1:length(files.directory.projections),
 stopCluster(cl)
 
 
-## ----arrange_isimip_dt_future, dependson="isimip_data_future"---------------------------------------
+## ----arrange_isimip_dt_future, dependson="isimip_data_future"---------------------------------------------------
 
 # ARRANGE DATA #################################################################
 
@@ -208,9 +208,9 @@ isimip.future.dt[, c("model", "climate") := tstrsplit(model, "/")]
 fwrite(isimip.future.dt, "isimip.future.dt.csv")
 
 
-## ----plot_isimip_dt_future, dependson="arrange_isimip_dt_future"------------------------------------
+## ----plot_isimip_dt_future, dependson="arrange_isimip_dt_future"------------------------------------------------
 
-# PLOT ISIMIP #################################################################
+# PLOT ISIMIP ##################################################################
 
 # Continental level ------------------------------------------------------------
 
@@ -225,9 +225,9 @@ isimip.future.dt[, sum(V1, na.rm = TRUE), .(year, Continent, model, climate)] %>
   theme(legend.position = "top")
 
 
-## ----plot_isimip_dt_future_merged, dependson="arrange_isimip_dt_future", fig.height=4---------------
+## ----plot_isimip_dt_future_merged, dependson="arrange_isimip_dt_future", fig.height=4---------------------------
 
-# PLOT ISIMIP MERGED ##########################################################
+# PLOT ISIMIP MERGED ###########################################################
 
 a <- isimip.future.dt[, sum(V1, na.rm = TRUE), .(year, Continent, model, climate)] %>%
   ggplot(., aes(year, V1, group = interaction(climate, model), color = model)) +
@@ -251,7 +251,7 @@ b <- isimip.future.dt[, sum(V1, na.rm = TRUE), .(year, Continent, model, climate
 plot_grid(a, b, ncol = 1, labels = "auto")
 
 
-## ----anova_isimip, dependson=c("arrange_isimip_data", "arrange_isimip_dt_future"), fig.height=3.2----
+## ----anova_isimip, dependson=c("arrange_isimip_data", "arrange_isimip_dt_future")-------------------------------
 
 # ANOVA ########################################################################
 
@@ -272,10 +272,30 @@ isimip.anova[, (columns_to_factor):= lapply(.SD, as.factor), .SDcols = (columns_
 
 # RUN MODEL AND ANALYSIS OF VARIANCE ###########################################
 
-results.dt <- isimip.anova[, analysis_variance_fun(.SD), .(Continent, context)]
-results.dt
+# List of models ---------------------------------------------------------------
 
-# PLOT RESULTS #################################################################
+functions <- list(lmm = lmm_fun,
+                  gamm = gamm_fun,
+                  rf = rf_fun, 
+                  bayes = bayes_fun)
+
+# Apply each function to the data and combine results ---------------------------
+
+results <- mclapply(names(functions), function(fun_name) {
+  
+  isimip.anova[, functions[[fun_name]](.SD), .(Continent, context)]
+  
+}, 
+mc.cores = detectCores() * 0.75)
+
+
+## ----plot_anova, dependson="anova_isimip", fig.height=3.2-------------------------------------------------------
+
+# PLOT RESULTS ##################################################################
+
+results 
+
+results.dt <- rbindlist(results)
 
 a <- isimip.full[, .(estimation = sum(V1)), .(model, Continent, climate, year, context)] %>%
   ggplot(., aes(year, estimation, color = model, group = interaction(climate, model))) +
@@ -285,27 +305,35 @@ a <- isimip.full[, .(estimation = sum(V1)), .(model, Continent, climate, year, c
   theme_AP() +
   guides(colour = guide_legend(nrow = 2)) +
   labs(x = "Year", y = bquote("IWW (km"^3 * ")"))  +
-  theme(legend.position = "top")
+  theme(legend.position = "top", 
+        legend.box.spacing = unit(0, "pt"))
 
-b <- melt(results.dt, measure.vars = paste(c("climate", "model", "random", "residual"), 
-                                      "variance", sep = "_")) %>%
+b <- results.dt %>%
+  melt(., measure.vars = c("climate_variance", "model_variance", "random_variance", 
+                           "residual_variance")) %>%
+  .[, .(min = min(value, na.rm = TRUE), 
+        max = max(value, na.rm = TRUE)), .(Continent, context, variable)] %>%
   .[, variance:= tstrsplit(variable, "_", fixed = TRUE)[[1]]] %>%
-  ggplot(., aes(Continent, value, fill = variance)) +
-  geom_bar(stat = "identity") +
+  ggplot(., aes(x = Continent, ymin = min, ymax = max, y = (min + max) / 2, color = variance)) +
+  geom_errorbar(width = 0.2) +
+  geom_point(size = 1) +
+  scale_color_manual(name = "", values=wes_palette(selected.palette, n = 4)) +
+  labs(x = "", y = "Fraction variance") +
   facet_wrap(~context, ncol = 1) +
-  labs(x = "", y = "Fraction of variance") +
-  scale_fill_manual(name = "", values= wes_palette(selected.palette, n = 4)) +
-  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
-  guides(fill = guide_legend(nrow = 2)) +
+  theme(legend.position = "top") +
+  scale_y_continuous(breaks = breaks_pretty(n = 3)) +
   theme_AP() +
-  theme(legend.position = "top")
+  theme(legend.position = "top") + 
+  guides(color = guide_legend(nrow = 2)) +
+  theme(legend.position = "top") +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2))
    
 plot_grid(a, b, ncol = 2, labels = "auto", rel_widths = c(0.72, 0.28))
 
 
-## ----check_combinations, dependson="anova_isimip", fig.height=2.3, fig.width=2.7--------------------
+## ----check_combinations, dependson="anova_isimip", fig.height=2.3, fig.width=2.7--------------------------------
 
-# COUNT COMBINATIONS OF MODEL AND CLIMATE ######################################
+# COUNT COMBINATIONS OF MODEL AND CLIMATE #######################################
 
 unique(isimip.full[, .(model, climate, context)]) %>%
   ggplot(., aes(x = model, y = climate, fill = context)) +
@@ -319,131 +347,131 @@ unique(isimip.full[, .(model, climate, context)]) %>%
   theme(legend.position = "top")
 
 
-## ----khan_data, cache.lazy=FALSE, eval = FALSE------------------------------------------------------
-# 
-# # KHAN ET AL 2023 DATASET ######################################################
-# 
-# path.projections <- "./files/khan_et_al_2023"
-# list.of.files <- list.files(path.projections, pattern = "\\.csv$")
-# combinations <- lapply(list.of.files, function(x) strsplit(x, "_")[[1]][1:4]) %>%
-#   do.call(rbind, .) %>%
-#   data.frame()
-# colnames(combinations) <- c("SSP", "RCP", "Climate", "Use")
-# 
-# # READ FILES IN PARALLEL #######################################################
-# 
-# # Create parallel cluste -------------------------------------------------------
-# 
-# numCores <- detectCores() * 0.75
-# cl <- makeCluster(numCores)
-# registerDoParallel(cl)
-# 
-# # Run for loop -----------------------------------------------------------------
-# 
-# result <- foreach(i = 1:length(list.of.files),
-#                   .combine = "rbind",
-#                   .packages = c("data.table", "countrycode",
-#                                 "sp", "rworldmap")) %dopar% {
-# 
-#                                   out <- fread(paste("./files/khan_et_al_2023/", list.of.files[i], sep = "/"))
-#                                   out[, `:=`(SSP = combinations[i, 1],
-#                                              RCP = combinations[i, 2],
-#                                              Climate = combinations[i, 3],
-#                                              Use = combinations[i, 4])]
-# 
-#                                   Country <- coords2country(out[1:nrow(out), 2:3])
-# 
-#                                   df <- cbind(Country, out)
-# 
-#                                   df[, Continent := countrycode(Country, origin = "country.name", destination = "continent")]
-# 
-#                                   df[, Dataset := list.of.files[i]]
-# 
-#                                   df
-#                                 }
-# 
-# # Stop the cluster after the computation ---------------------------------------
-# 
-# stopCluster(cl)
+## ----khan_data, cache.lazy=FALSE, eval = FALSE------------------------------------------------------------------
+## 
+## # KHAN ET AL 2023 DATASET ######################################################
+## 
+## path.projections <- "./files/khan_et_al_2023"
+## list.of.files <- list.files(path.projections, pattern = "\\.csv$")
+## combinations <- lapply(list.of.files, function(x) strsplit(x, "_")[[1]][1:4]) %>%
+##   do.call(rbind, .) %>%
+##   data.frame()
+## colnames(combinations) <- c("SSP", "RCP", "Climate", "Use")
+## 
+## # READ FILES IN PARALLEL #######################################################
+## 
+## # Create parallel cluste -------------------------------------------------------
+## 
+## numCores <- detectCores() * 0.75
+## cl <- makeCluster(numCores)
+## registerDoParallel(cl)
+## 
+## # Run for loop -----------------------------------------------------------------
+## 
+## result <- foreach(i = 1:length(list.of.files),
+##                   .combine = "rbind",
+##                   .packages = c("data.table", "countrycode",
+##                                 "sp", "rworldmap")) %dopar% {
+## 
+##                                   out <- fread(paste("./files/khan_et_al_2023/", list.of.files[i], sep = "/"))
+##                                   out[, `:=`(SSP = combinations[i, 1],
+##                                              RCP = combinations[i, 2],
+##                                              Climate = combinations[i, 3],
+##                                              Use = combinations[i, 4])]
+## 
+##                                   Country <- coords2country(out[1:nrow(out), 2:3])
+## 
+##                                   df <- cbind(Country, out)
+## 
+##                                   df[, Continent := countrycode(Country, origin = "country.name", destination = "continent")]
+## 
+##                                   df[, Dataset := list.of.files[i]]
+## 
+##                                   df
+##                                 }
+## 
+## # Stop the cluster after the computation ---------------------------------------
+## 
+## stopCluster(cl)
 
 
-## ----arrange_khan_data, dependson="khan_data", cache.lazy=FALSE, eval = FALSE-----------------------
-# 
-# # ARRANGE DATA #################################################################
-# 
-# numeric_cols <- grep("^[0-9]+$", names(result), value = TRUE)
-# khan.dt <- melt(result, measure.vars = numeric_cols, variable.name = "Year") %>%
-#   .[, Year:= as.numeric(as.character(Year))] %>%
-#   .[, model:= "GCAM"] %>%
-#   na.omit()
-# 
-# # EXPORT DATA ###################################################################
-# 
-# khan.dt.continent <- khan.dt[, .(estimation = sum(value)),
-#                              .(Year, Continent, Use, RCP, SSP, Climate, Dataset, model)] %>%
-#   .[, climate:= paste(Climate, RCP, SSP, sep = "_")]
-# 
-# fwrite(khan.dt.continent, "khan.dt.continent.csv")
+## ----arrange_khan_data, dependson="khan_data", cache.lazy=FALSE, eval = FALSE-----------------------------------
+## 
+## # ARRANGE DATA #################################################################
+## 
+## numeric_cols <- grep("^[0-9]+$", names(result), value = TRUE)
+## khan.dt <- melt(result, measure.vars = numeric_cols, variable.name = "Year") %>%
+##   .[, Year:= as.numeric(as.character(Year))] %>%
+##   .[, model:= "GCAM"] %>%
+##   na.omit()
+## 
+## # EXPORT DATA ###################################################################
+## 
+## khan.dt.continent <- khan.dt[, .(estimation = sum(value)),
+##                              .(Year, Continent, Use, RCP, SSP, Climate, Dataset, model)] %>%
+##   .[, climate:= paste(Climate, RCP, SSP, sep = "_")]
+## 
+## fwrite(khan.dt.continent, "khan.dt.continent.csv")
 
 
-## ----plot_khan_continental, dependson="arrange_khan_data", fig.height=2.3, fig.width=4, eval=FALSE----
-# 
-# # PLOT #########################################################################
-# 
-# # Continental ------------------------------------------------------------------
-# 
-# plot.khan.continental <- khan.dt.continent %>%
-#   ggplot(., aes(Year, estimation, color = Continent, group = interaction(Dataset, Continent))) +
-#   geom_line(alpha = 0.3) +
-#   facet_wrap(~Use) +
-#   theme_AP() +
-#   theme(legend.position = "top") +
-#   labs(x = "", y = bquote("km"^3))
-# 
-# plot.khan.continental
+## ----plot_khan_continental, dependson="arrange_khan_data", fig.height=2.3, fig.width=4, eval=FALSE--------------
+## 
+## # PLOT #########################################################################
+## 
+## # Continental ------------------------------------------------------------------
+## 
+## plot.khan.continental <- khan.dt.continent %>%
+##   ggplot(., aes(Year, estimation, color = Continent, group = interaction(Dataset, Continent))) +
+##   geom_line(alpha = 0.3) +
+##   facet_wrap(~Use) +
+##   theme_AP() +
+##   theme(legend.position = "top") +
+##   labs(x = "", y = bquote("km"^3))
+## 
+## plot.khan.continental
 
 
-## ----plot_khan_global, dependson="arrange_khan_data", fig.height=2.3, fig.width=4, eval = FALSE-----
-# 
-# # PLOT #########################################################################
-# 
-# # Global -----------------------------------------------------------------------
-# 
-# plot.khan.global <- khan.dt[, sum(value), .(Year, Use, Dataset)] %>%
-#   ggplot(., aes(Year, V1, group = Dataset)) +
-#   geom_line(alpha = 0.3) +
-#   facet_wrap(~Use) +
-#   theme_AP() +
-#   theme(legend.position = "top") +
-#   labs(x = "Year", y = bquote("km"^3))
-# 
-# plot.khan.global
+## ----plot_khan_global, dependson="arrange_khan_data", fig.height=2.3, fig.width=4, eval = FALSE-----------------
+## 
+## # PLOT #########################################################################
+## 
+## # Global -----------------------------------------------------------------------
+## 
+## plot.khan.global <- khan.dt[, sum(value), .(Year, Use, Dataset)] %>%
+##   ggplot(., aes(Year, V1, group = Dataset)) +
+##   geom_line(alpha = 0.3) +
+##   facet_wrap(~Use) +
+##   theme_AP() +
+##   theme(legend.position = "top") +
+##   labs(x = "Year", y = bquote("km"^3))
+## 
+## plot.khan.global
 
 
 ## ----plot_khan_merged, dependson=c("plot_khan_continental", "plot_khan_global"), fig.height=3.5, fig.width=4, eval = FALSE----
-# 
-# # MERGE KHAN ET AL DATASETS ####################################################
-# 
-# plot_grid(plot.khan.continental, plot.khan.global, ncol = 1, labels = "auto",
-#           rel_heights = c(0.53, 0.47))
-# 
+## 
+## # MERGE KHAN ET AL DATASETS ####################################################
+## 
+## plot_grid(plot.khan.continental, plot.khan.global, ncol = 1, labels = "auto",
+##           rel_heights = c(0.53, 0.47))
+## 
 
 
-## ----plot_khan_ssp_rcp, dependson="arrange_khan_data", eval = FALSE---------------------------------
-# 
-# # PLOT SSPS VS RCPS ############################################################
-# 
-# khan.dt[, sum(value), .(Year, Use, Dataset, RCP, SSP)] %>%
-#   ggplot(., aes(Year, V1, group = Dataset, color = Use)) +
-#   geom_line() +
-#   facet_grid(RCP~SSP) +
-#   theme_AP() +
-#   theme(legend.position = "top") +
-#   labs(x = "Year", y = bquote("km"^3))
-# 
+## ----plot_khan_ssp_rcp, dependson="arrange_khan_data", eval = FALSE---------------------------------------------
+## 
+## # PLOT SSPS VS RCPS ############################################################
+## 
+## khan.dt[, sum(value), .(Year, Use, Dataset, RCP, SSP)] %>%
+##   ggplot(., aes(Year, V1, group = Dataset, color = Use)) +
+##   geom_line() +
+##   facet_grid(RCP~SSP) +
+##   theme_AP() +
+##   theme(legend.position = "top") +
+##   labs(x = "Year", y = bquote("km"^3))
+## 
 
 
-## ----merge_khan_isimip, dependson="anova_isimip", fig.height=1.7, fig.width=6.5---------------------
+## ----merge_khan_isimip, dependson="anova_isimip", fig.height=1.7, fig.width=6.5---------------------------------
 
 # MERGE KHAN ET AL DATA WITH ISIMIP ############################################
 
@@ -479,14 +507,14 @@ merged.dt[year %in% c(2030, 2040, 2050),
   .[, .(sum_min = sum(min), sum_max = sum(max)), year]
 
 
-## ----naomi_data-------------------------------------------------------------------------------------
+## ----naomi_data-------------------------------------------------------------------------------------------------
 
-# NAOMI DATASET ###############################################################
+# NAOMI DATASET #################################################################
 
-references.projected <- data.table(read.xlsx("references_projection.xlsx")) %>%
+references.projected <- data.table(read.xlsx("./data/references_projection.xlsx")) %>%
   .[, focus:= "projected"]
 
-references.current <- data.table(read.xlsx("references_current.xlsx")) %>%
+references.current <- data.table(read.xlsx("./data/references_current.xlsx")) %>%
   .[, focus:= "current"]
 
 references.full.dt <- rbind(references.projected, references.current) %>%
@@ -519,27 +547,17 @@ references.full.dt[, region:= ifelse(region == "america", "americas", region)]
 references.full.dt[, publication.date:= str_extract(author, "\\d{4}")] %>%
   .[, publication.date:= as.numeric(publication.date)]
 
-# FEATURES OF THE DATASET ######################################################
-
-
-references.full.dt[, range.estimation:= ifelse(publication.date >= 1990 & publication.date < 2000, "1990-2000", 
-                                          ifelse(publication.date >= 2000 & publication.date < 2010, "2000-2010",
-                                                 "2010-2024"))]
-
-# RANGE ESTIMATION #############################################################
-
-references.full.dt[, range.estimation.year:= ifelse(estimation.year >= 1990 & estimation.year < 2010, "1990-2010", 
-                                               ifelse(estimation.year >= 2010 & publication.date < 2050, "2010-2050",
-                                                      "2050-2100"))]
-
-
-## ----naomi_features, dependson="naomi_data", fig.height=1.8, fig.width=2----------------------------
+## ----naomi_features, dependson="naomi_data", fig.height=1.8, fig.width=2----------------------------------------
 
 # FEATURES OF THE DATASET ######################################################
 
 # Name of different studies ----------------------------------------------------
 
 sort(unique(references.full.dt$title))
+
+# Number of data points --------------------------------------------------------
+
+nrow(references.full.dt)
 
 # Name of different studies per variable ---------------------------------------
 
@@ -562,7 +580,7 @@ ggplot(dt, aes(publication.date, cumulative_sum)) +
 
 # Only irrigation water withdrawal studies -------------------------------------
 
-references.full.dt[, .(title, publication.date, variable)] %>%
+cumulative.iww <- references.full.dt[, .(title, publication.date, variable)] %>%
   .[variable == "iww"] %>%
   .[!duplicated(.)] %>%
   setorder(., publication.date) %>%
@@ -570,18 +588,33 @@ references.full.dt[, .(title, publication.date, variable)] %>%
   .[, cumulative_sum := cumsum(N)] %>%
   ggplot(., aes(publication.date, cumulative_sum)) +
   geom_line() + 
+  scale_x_continuous(breaks = breaks_pretty(n = 3)) +
   geom_point(size = 0.7) + 
   theme_AP() + 
   labs(x = "Year", y = "Nº studies")
 
+cumulative.iww
 
-## ----plot_naomi, dependson="naomi_data", fig.height=3, fig.width=6----------------------------------
+
+## ----plot_naomi, dependson="naomi_data", fig.height=3.2, fig.width=6--------------------------------------------
 
 # PLOT ALL ESTIMATIONS #########################################################
 
-def.alpha <- 0.3
+def.alpha <- 0.2
 
-references.full.dt[variable == "iww" & region == "global"] %>%
+plot.iww <- references.full.dt[variable == "iww" & region == "global"] %>%
+  .[, .(author, study, estimation.year, value)] %>%
+  na.omit() %>%
+  ggplot(., aes(estimation.year, value, color = author, group = study)) +
+  geom_point(alpha = def.alpha, size = 0.7) +
+  labs(x = "Year", y = bquote("Km"^3)) +
+  scale_color_discrete(name = "") +
+  geom_line(alpha = def.alpha) +
+  theme_AP()
+
+plot.iww
+
+references.full.dt[variable == "iwc" & region == "global"] %>%
   .[, .(author, study, estimation.year, value)] %>%
   na.omit() %>%
   ggplot(., aes(estimation.year, value, color = author, group = study)) +
@@ -593,7 +626,27 @@ references.full.dt[variable == "iww" & region == "global"] %>%
 
 
 
-## ----session_information----------------------------------------------------------------------------
+## ----evolution_uncertainty, dependson="naomi_data", fig.height=2.2, fig.width=2.2, warning=FALSE----------------
+
+# RUN FUNCTION ################################################################
+
+years_interest <- c(2000, 2050)
+
+plot.years <- lapply(years_interest, function(year) 
+  evolution_uncertainty_fun(data = references.full.dt, target_year = year))
+
+plot.years
+
+
+
+## ----merge_unc, dependson=c("evolution_uncertainty", "plot_naomi"), fig.height=5.5, fig.width=6, warning=FALSE----
+
+bottom <- plot_grid(cumulative.iww, plot.years[[1]], plot.years[[2]], ncol = 3, 
+                    labels = c("b", "c", "d"), rel_widths = c(0.3, 0.35, 0.35))
+plot_grid(plot.iww, bottom, ncol = 1, labels = c("a", ""), rel_heights = c(0.65, 0.45))
+
+
+## ----session_information----------------------------------------------------------------------------------------
 
 # SESSION INFORMATION ##########################################################
 

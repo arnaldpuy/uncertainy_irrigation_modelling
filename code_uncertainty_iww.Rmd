@@ -1,5 +1,5 @@
 ---
-title: "Uncertainty in global irrigation withdrawals persists after 50 years of research"
+title: "Uncertainty persists after 50 years of global irrigation modelling"
 subtitle: "R code"
 author: "Arnald Puy"
 header-includes:
@@ -44,7 +44,7 @@ knitr::opts_chunk$set(echo = TRUE, dev = "pdf", cache = TRUE)
 sensobol::load_packages(c("openxlsx", "data.table", "tidyverse","cowplot", 
                           "benchmarkme", "parallel", "wesanderson", "scales", "ncdf4", 
                           "countrycode", "rworldmap", "sp", "doParallel", "here", "lme4", 
-                          "microbenchmark", "mgcv", "brms", "randomForest"))
+                          "microbenchmark", "mgcv", "brms", "randomForest", "here"))
 
 # Create custom theme -----------------------------------------------------------
 
@@ -69,7 +69,8 @@ theme_AP <- function() {
           axis.title.x = element_text(size = 7.3), 
           axis.title.y = element_text(size = 7.3),
           plot.title = element_text(size = 8),
-          strip.text.x = element_text(size = 7.4)) 
+          strip.text.x = element_text(size = 7.4), 
+          strip.text.y = element_text(size = 7.4)) 
 }
 
 # Select color palette ----------------------------------------------------------
@@ -77,9 +78,9 @@ theme_AP <- function() {
 selected.palette <- "Darjeeling1"
 ```
 
-```{r source_functions, warning=FALSE, message=FALSE, results='hide'}
+```{r source_functions, warning=FALSE, message=FALSE, results="hide"}
 
-# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ##################################
+# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ###################################
 
 # Source all .R files in the "functions" folder --------------------------------
 
@@ -603,32 +604,34 @@ references.full.dt[, publication.date:= str_extract(author, "\\d{4}")] %>%
 
 # Name of different studies ----------------------------------------------------
 
-sort(unique(references.full.dt$title))
+sort(unique(references.full.dt[variable == "iww" & region == "global", title]))
 
 # Number of data points --------------------------------------------------------
 
-nrow(references.full.dt)
+nrow(references.full.dt[variable == "iww" & region == "global"])
 
-# Name of different studies per variable ---------------------------------------
+# Number of different studies per variable ---------------------------------------
 
-references.full.dt[, unique(title), variable] %>%
+references.full.dt[region == "global", unique(title), variable] %>%
   .[, .N, variable]
 
+# Number of data points for 2000, 2050, 2070, 2100 -----------------------------
+
+references.full.dt[variable == "iww" & region == "global" & 
+                     estimation.year %in% c(2000, 2050, 2070, 2100), .N, estimation.year]
+
+# Number of unique studies estimating for 2000, 2050, 2070, 2100 ---------------
+
+references.full.dt[variable == "iww" & region == "global" & 
+                     estimation.year %in% c(2000, 2050, 2070, 2100), unique(title), estimation.year] %>%
+  .[, .N, estimation.year]
+
+# Number of data points for every targeted year -----------------------------
+
+references.full.dt[variable == "iww" & region == "global", .N, estimation.year] %>%
+  .[order(estimation.year)]
+
 # Cumulative sum of published studies ------------------------------------------
-
-dt <- references.full.dt[, .(title, publication.date)] %>%
-  .[!duplicated(.)] %>%
-  setorder(., publication.date) %>%
-  .[, .N, publication.date] %>%
-  .[, cumulative_sum := cumsum(N)]
-
-ggplot(dt, aes(publication.date, cumulative_sum)) +
-  geom_line() + 
-  geom_point(size = 0.7) + 
-  theme_AP() + 
-  labs(x = "Year", y = "Nº studies")
-
-# Only irrigation water withdrawal studies -------------------------------------
 
 cumulative.iww <- references.full.dt[, .(title, publication.date, variable)] %>%
   .[variable == "iww"] %>%
@@ -646,7 +649,7 @@ cumulative.iww <- references.full.dt[, .(title, publication.date, variable)] %>%
 cumulative.iww
 ```
 
-```{r plot_naomi, dependson="naomi_data", fig.height=3.2, fig.width=6}
+```{r plot_naomi, dependson="naomi_data", fig.height=3.5, fig.width=6}
 
 # PLOT ALL ESTIMATIONS #########################################################
 
@@ -656,7 +659,7 @@ plot.iww <- references.full.dt[variable == "iww" & region == "global"] %>%
   .[, .(author, study, estimation.year, value)] %>%
   na.omit() %>%
   ggplot(., aes(estimation.year, value, color = author, group = study)) +
-  geom_point(alpha = def.alpha, size = 0.7) +
+  geom_point(alpha = def.alpha, size = 0.5) +
   labs(x = "Year", y = bquote("Km"^3)) +
   scale_color_discrete(name = "") +
   geom_line(alpha = def.alpha) +
@@ -676,26 +679,241 @@ references.full.dt[variable == "iwc" & region == "global"] %>%
 
 ```
 
-## Evolution of uncertainty through time
+## The garden of forking paths
 
-```{r evolution_uncertainty, dependson="naomi_data", fig.height=2.2, fig.width=2.2, warning=FALSE}
+```{r forking_paths, dependson="naomi_data"}
 
-# RUN FUNCTION ################################################################
+# DEFINE THE UNCERTAINTY SPACE ##################################################
 
-years_interest <- c(2000, 2050)
+# Target year ------------------------------------------------------------------
 
-plot.years <- lapply(years_interest, function(year) 
-  evolution_uncertainty_fun(data = references.full.dt, target_year = year))
+target_year <- c(2000, 2050, 2070, 2100)
 
-plot.years
+# Target year interval ---------------------------------------------------------
+
+target_year_interval <- c("yes", "no")
+
+# Interval publication ---------------------------------------------------------
+
+interval <- c(10, 15, 20)
+
+# Metrics of study -------------------------------------------------------------
+
+metrics <- c("cv", "range", "sd", "var", "entropy", "iqr")
+
+# Inclusion criteria -----------------------------------------------------------
+
+inclusion_criteria <- c("all", "exclude_before_1990")
+
+# Rolling windows --------------------------------------------------------------
+
+rolling_window_factor <- c(1, 0.5)
+
+# Define the forking paths -----------------------------------------------------
+
+forking_paths <- expand.grid(target_year = target_year,
+                             target_year_interval = target_year_interval,
+                             interval = interval,
+                             inclusion_criteria = inclusion_criteria,
+                             rolling_window_factor = rolling_window_factor,
+                             metric = c(metrics, paste(metrics, "_normalized", sep = ""))) %>%
+  data.table()
+
+# Number of simulations --------------------------------------------------------
+
+nrow(forking_paths)
+
+# RUN MODEL #####################################################################
+
+trend <- list()
+
+for (i in 1:nrow(forking_paths)) {
+  
+  trend[[i]] <- forking_paths_fun(dt = references.full.dt,
+                                  target_year = forking_paths[[i, "target_year"]], 
+                                  target_year_interval = forking_paths[[i, "target_year_interval"]],
+                                  interval = forking_paths[[i, "interval"]], 
+                                  rolling_window_factor = forking_paths[[i, "rolling_window_factor"]],
+                                  inclusion_criteria = forking_paths[[i, "inclusion_criteria"]],
+                                  metric = forking_paths[[i, "metric"]])
+}
+```
+
+```{r naomi_arrange, dependson="forking_paths"}
+
+# ARRANGE DATA ##################################################################
+
+output.dt <- lapply(trend, function(x) x[["results"]]) %>%
+  do.call(rbind, .) %>%
+  data.table() %>%
+  setnames(., "V1", "trend")
+
+final.dt <- cbind(forking_paths, output.dt)
+
+# Print the fraction of simulations in each classification ---------------------
+
+final.dt %>%
+  .[, .(total = .N), trend] %>%
+  .[, fraction:= total / nrow(output.dt)] %>%
+  print()
+
+
+# Now remove all simulations that produced just one single point ---------------
+
+final.dt <- final.dt[!trend == "single point"]
+
+# Simulations that did not lead to a reduction in uncertainty ------------------
+
+final.dt %>%
+  .[, .(total = .N), trend] %>%
+  .[, fraction:= total / nrow(output.dt)] %>%
+  .[!trend == "Descending"] %>%
+  .[, sum(fraction)]
+```
+
+```{r examples_plots, dependson="forking_paths", fig.height=3.5, fig.width=3.5, warning=FALSE}
+
+# PLOTS FORKING PATHS EXAMPLES #################################################
+
+plots.dt <- lapply(trend, function(x) x[["plot"]]) 
+
+random.plots <- c(1, 986, 345)
+decreasing.plots <- c(1093, 556, 4)
+increasing.plots <- c(10, 602, 770)
+
+out.random <- out.decreasing <- out.increasing <- list()
+
+for (i in 1:length(random.plots)) {
+  
+  out.random[[i]] <- plot_plots_forking_paths_fun(random.plots[i])
+  out.decreasing[[i]] <- plot_plots_forking_paths_fun(decreasing.plots[i])
+  out.increasing[[i]] <- plot_plots_forking_paths_fun(increasing.plots[i])
+}
+
+pt.random <- plot_grid(out.random[[1]] + geom_smooth() + labs(x = "", y = "+ Uncertainty"), 
+                       out.random[[2]] + geom_smooth() + labs(x = "", y = ""), 
+                       out.random[[3]] + geom_smooth() + labs(x = "", y = ""), 
+                       ncol = 3)
+
+pt.decreasing <- plot_grid(out.decreasing[[1]] + geom_smooth() + labs(x = "", y = "+ Uncertainty"), 
+                           out.decreasing[[2]] + geom_smooth() + labs(x = "", y = ""), 
+                           out.decreasing[[3]] + geom_smooth(method = "lm", se = F) + labs(x = "", y = ""), 
+                           ncol = 3)
+
+pt.increasing <- plot_grid(out.increasing[[1]] + geom_smooth(method = "lm", se = F), 
+                           out.increasing[[2]] + geom_smooth() + labs(x = "Publication year", y = ""), 
+                           out.increasing[[3]] + geom_smooth() + labs(x = "Publication year", y = ""), 
+                           ncol = 3)
+
+plot_grid(pt.random, pt.decreasing, pt.increasing, ncol = 1)
+```
+
+```{r plot_results_forking_paths, dependson=c("naomi_arrange", "forking_paths"), fig.height=2.2, fig.width=2.2}
+
+# PLOT RESULTS #################################################################
+
+selected_colors <- c("Ascending" = "red", "Descending" = "darkgreen", "Random" = "orange")
+
+plot.fraction <- final.dt[, .(total = .N), trend] %>%
+  .[, fraction:= total / nrow(output.dt)] %>%
+  ggplot(., aes(trend, fraction, fill = trend)) +
+  geom_bar(stat = "identity") +
+  labs(x = "", y = "Fraction simulations") +
+  scale_fill_manual(values = selected_colors, name = "Uncertainty") +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  theme_AP() + 
+  theme(axis.ticks.x = element_blank(), 
+        axis.text.x = element_blank(), 
+        legend.position = c(0.33, 0.77))
+
+plot.fraction 
+```
+
+```{r random_forest, dependson=c("naomi_arrange", "forking_paths"), fig.width=3.5, fig.height=2}
+
+# RANDOM FOREST ################################################################
+
+# Convert categorical variables to factors -------------------------------------
+
+df <- data.frame(final.dt)
+df$inclusion_criteria <- as.factor(final.dt$inclusion_criteria)
+df$metric <- as.factor(final.dt$metric)
+df$trend <- as.factor(df$trend)
+df$target_year_interval <- as.factor(df$target_year_interval)
+
+# Train the model --------------------------------------------------------------
+
+rf_model <- randomForest(trend ~ target_year + target_year_interval + interval + 
+                           inclusion_criteria + rolling_window_factor + metric, 
+                         data = df, importance = TRUE)
+
+# View variable importance -----------------------------------------------------
+
+dt_rf_model <- data.frame(importance(rf_model))
+dt_rf_model
+
+# Plot -------------------------------------------------------------------------
+
+plot.rf <- dt_rf_model %>%
+  rownames_to_column(., var = "factors") %>%
+  data.table() %>%
+  setnames(., c("MeanDecreaseAccuracy", "MeanDecreaseGini"), 
+           c("Accuracy", "Gini")) %>%
+  melt(., measure.vars = c("Accuracy", "Gini")) %>%
+  ggplot(., aes(reorder(factors, value), value)) +
+  geom_point() +
+  coord_flip() +
+  facet_wrap(~variable) + 
+  scale_y_continuous(breaks = breaks_pretty(n = 3)) +
+  labs(x = "", y = "Mean decrease") +
+  theme_AP()
+
+plot.rf
+```
+
+```{r merge_fraction_rf, dependson=c("random_forest", "plot_results_forking_paths", "forking_paths"), fig.height=2.2, fig.width=6.3}
+
+bottom <- plot_grid(cumulative.iww, plot.fraction, plot.rf, ncol = 3, labels = c("b", "c", "d"), 
+          rel_widths = c(0.26, 0.3, 0.44))
+
+bottom
+```
+
+```{r merge_fraction_trend, dependson=c("merge_fraction_rf", "plot_naomi", "forking_paths"), fig.height=5.8, fig.width=6}
+
+# 
+final.faceted.plot <- plot_grid(plot.iww, bottom, ncol = 1, labels = c("a", ""), 
+                                rel_heights = c(0.55, 0.45))
+
+final.faceted.plot
 
 ```
 
-```{r merge_unc, dependson=c("evolution_uncertainty", "plot_naomi"), fig.height=5.5, fig.width=6, warning=FALSE}
+```{r plot_forking_paths_faceted, dependson=c("naomi_arrange", "forking_paths"), fig.height=4, fig.width=4}
 
-bottom <- plot_grid(cumulative.iww, plot.years[[1]], plot.years[[2]], ncol = 3, 
-                    labels = c("b", "c", "d"), rel_widths = c(0.3, 0.35, 0.35))
-plot_grid(plot.iww, bottom, ncol = 1, labels = c("a", ""), rel_heights = c(0.65, 0.45))
+# RESULTS FACETED BY INTERVAL AND TARGET YEAR, X AXIS METRICS ###################
+
+plot.faceted.metrics <- final.dt %>%
+  ggplot(., aes(x = factor(metric), fill = trend)) +
+  geom_bar(position ="identity") +
+  facet_grid(target_year ~ interval, scales = "free_y") +
+  scale_fill_manual(values = selected_colors, name = "Uncertainty") +
+  theme_AP() +
+  labs(x = "Metric", y = "Nº simulations") +
+  theme(legend.position = "none") +
+  coord_flip()
+
+plot.faceted.metrics
+```
+
+
+```{r final_final_merged, dependson = c("plot_naomi", "merge_fraction_rf", "random_forest", "forking_paths"), fig.height=7, fig.width=6.5}
+
+bottom <- plot_grid(cumulative.iww, plot.fraction, ncol = 2, rel_widths = c(0.4, 0.6), 
+                    labels = c("b", "c"))
+left <- plot_grid(bottom, plot.rf, ncol = 1, labels = c("", "d"), rel_heights = c(0.6, 0.4))
+bottom2 <- plot_grid(left, plot.faceted.metrics, ncol = 2, labels = c("", "e"))
+plot_grid(plot.iww, bottom2, rel_heights = c(0.42, 0.58), ncol = 1, labels = c("a", ""))
 ```
 
 \newpage

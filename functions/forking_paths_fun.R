@@ -85,17 +85,74 @@ calculate_uncertainty_fun <- function(data, metric) {
   return(result)
 }
 
+# Function to check the trend of points ----------------------------------------
+
+check_order_fun <- function(data) {
+  
+  # Check if the data has only one row or all values are the same --------------
+  
+  if (length(data) == 1 || length(unique(data)) == 1) {
+    
+    return("single point")
+  }
+  
+  # Calculate differences between points ---------------------------------------
+  
+  diffs <- diff(data)
+  
+  # Check the trend based on differences ---------------------------------------
+  
+  if (all(diffs > 0)) {
+    
+    return("Ascending")
+    
+  } else if (all(diffs < 0)) {
+    
+    return("Descending")
+    
+  } else {
+    
+    return("Random")
+  }
+}
+
 # FUNCTION TO EXPLORE FORKING PATHS ############################################
 
 forking_paths_fun <- function(dt, target_year, interval, inclusion_criteria, 
-                              metric, rolling_window_factor) {
+                              metric, rolling_window_factor, target_year_interval) {
+  
+  # Define target year and target year interval --------------------------------
+  
+  if (target_year_interval == "yes") {
+    
+    if (target_year == 2000) {
+      
+      target_year <- c(target_year, target_year + 10)
+      
+    } else if (target_year == 2100) {
+      
+      target_year <- c(target_year - 10, target_year)
+      
+    } else {
+      
+      target_year <- c(target_year - 10, target_year + 10)
+      
+    }
+    
+  }
+  
+  # Filter based on target_year ------------------------------------------------
   
   df_filtered <- dt[estimation.year %in% target_year] 
   
-  if(inclusion_criteria == "exclude_before_1990") {
+  # Apply inclusion criteria fork ----------------------------------------------
+  
+  if (inclusion_criteria == "exclude_before_1990") {
     
     df_filtered <- df_filtered[publication.date >= 1990]
   }
+  
+  # Create periods -------------------------------------------------------------
   
   publication_periods <- create_periods_fun(1970, 2030, interval = interval, 
                                             rolling_window_factor = rolling_window_factor)
@@ -107,7 +164,8 @@ forking_paths_fun <- function(dt, target_year, interval, inclusion_criteria,
   
   df_filtered[, publication_period := as.character(publication_period)]
   
-  # Extract midpoints from publication_period
+  # Extract midpoints from publication_period ----------------------------------
+  
   df_filtered[, period_midpoint := sapply(publication_period, function(period) {
     years <- as.numeric(unlist(strsplit(period, "–")))
     mean(years)
@@ -121,7 +179,11 @@ forking_paths_fun <- function(dt, target_year, interval, inclusion_criteria,
     merge(., unique.studies, by = "publication_period") %>%
     setorder(., period_midpoint)
   
-  output <- check_order(dt$uncertainty)
+  # Check order of the points --------------------------------------------------
+  
+  output <- check_order_fun(dt$uncertainty)
+  
+  # Draw plots for each simulation ---------------------------------------------
   
   plot <- ggplot(dt, aes(period_midpoint, uncertainty)) +
     geom_point() 

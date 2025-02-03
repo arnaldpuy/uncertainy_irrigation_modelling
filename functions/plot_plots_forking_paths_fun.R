@@ -11,7 +11,7 @@ plot_plots_forking_paths_fun <- function(simulation) {
     theme(axis.ticks.y = element_blank(), 
           axis.text.y = element_blank(),
           plot.title = element_text(size = 7.3), 
-          plot.margin = unit(c(0, 0.8, 0, -0.4), "cm")) 
+          plot.margin = unit(c(0, 0, 0, -0.02), "cm")) 
   
   return(out)
 }

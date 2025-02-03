@@ -80,7 +80,7 @@ selected.palette <- "Darjeeling1"
 
 ```{r source_functions, warning=FALSE, message=FALSE, results="hide"}
 
-# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ###################################
+# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ##################################
 
 # Source all .R files in the "functions" folder --------------------------------
 
@@ -805,7 +805,7 @@ pt.increasing <- plot_grid(out.increasing[[1]] + geom_smooth(method = "lm", se =
                            out.increasing[[3]] + geom_smooth() + labs(x = "Publication year", y = ""), 
                            ncol = 3)
 
-plot_grid(pt.random, pt.decreasing, pt.increasing, ncol = 1)
+plot_grid(pt.random, pt.decreasing, pt.increasing, ncol = 1, labels = "auto")
 ```
 
 ```{r plot_results_forking_paths, dependson=c("naomi_arrange", "forking_paths"), fig.height=2.2, fig.width=2.2}

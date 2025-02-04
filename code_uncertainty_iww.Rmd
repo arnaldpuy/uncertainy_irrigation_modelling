@@ -1,5 +1,5 @@
 ---
-title: "Uncertainty persists after 50 years of global irrigation modelling"
+title: "Uncertainty in global irrigation water use persists after 50 years of research"
 subtitle: "R code"
 author: "Arnald Puy"
 header-includes:

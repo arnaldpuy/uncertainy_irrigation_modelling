@@ -18,8 +18,9 @@ multiverse analysis of 1,200 data points from 40 studies published over a 50 yea
 uncertainty evolving randomly through time. Evidence for research reducing uncertainty 
 is just as strong as for research increasing it, with perceived trends fully depending 
 on the methodology used to analyze the data. Our findings suggest that advancing our 
-understanding of the global impact of irrigation requires not more estimates, but deeper 
-insights into how uncertainties and methodological decisions shape irrigation modelling.*
+knowledge of the global impact of irrigation requires not more estimates, but deeper 
+insights into how uncertainties and methodological decisions shape our understanding
+of irrigation water use.*
 
 ## Replication
 

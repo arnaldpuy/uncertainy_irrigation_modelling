@@ -649,6 +649,17 @@ cumulative.iww <- references.full.dt[, .(title, publication.date, variable)] %>%
 cumulative.iww
 ```
 
+```{r histogram_data_points, dependson="naomi_data", fig.height=2, fig.width=2}
+
+# DISTRIBUTION OF DATA POINTS THROUGH YEARS @###################################
+
+references.full.dt[variable == "iww" & region == "global", .N, estimation.year] %>%
+  ggplot(., aes(estimation.year, N)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Year", y = "Nº data points") +
+  theme_AP()
+```
+
 ```{r plot_naomi, dependson="naomi_data", fig.height=3.5, fig.width=6}
 
 # PLOT ALL ESTIMATIONS #########################################################
@@ -749,6 +760,10 @@ output.dt <- lapply(trend, function(x) x[["results"]]) %>%
   setnames(., "V1", "trend")
 
 final.dt <- cbind(forking_paths, output.dt)
+
+# Export simulations -----------------------------------------------------------
+
+fwrite(final.dt, "forking.paths.dataset.csv")
 
 # Print the fraction of simulations in each classification ---------------------
 
@@ -916,6 +931,23 @@ bottom2 <- plot_grid(left, plot.faceted.metrics, ncol = 2, labels = c("", "e"))
 plot_grid(plot.iww, bottom2, rel_heights = c(0.42, 0.58), ncol = 1, labels = c("a", ""))
 ```
 
+```{r faceted_plot, dependson="naomi_arrange", fig.height=3.8, fig.width=5.5}
+
+final.dt %>%
+  melt(., measure.vars = c("target_year", "target_year_interval", "interval", 
+                           "inclusion_criteria", "rolling_window_factor", "metric")) %>%
+  .[, .N, .(variable, value, trend)] %>%
+  .[ , value := gsub("_normalized", "_n", value)] %>%
+  ggplot(., aes(value, N, fill = trend)) +
+  scale_fill_manual(values = selected_colors, name = "Uncertainty") +
+  geom_bar(stat = "identity", position = position_dodge(0.5)) +
+  facet_wrap(~variable, scale = "free") +
+  labs(x = "", y = "Nº simulations") +
+  theme_AP() + 
+  coord_flip() +
+  theme(legend.position = "none")
+
+```
 \newpage
 
 # Session information

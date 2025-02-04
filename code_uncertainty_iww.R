@@ -1,8 +1,8 @@
-## ----setup, include=FALSE--------------------------------------------------------------------------
+## ----setup, include=FALSE--------------------------------------------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE, dev = "pdf", cache = TRUE)
 
 
-## ----warning=FALSE, message=FALSE------------------------------------------------------------------
+## ----warning=FALSE, message=FALSE------------------------------------------------------------------------------
 
 #   PRELIMINARY FUNCTIONS ######################################################
 
@@ -43,7 +43,7 @@ theme_AP <- function() {
 selected.palette <- "Darjeeling1"
 
 
-## ----source_functions, warning=FALSE, message=FALSE, results="hide"--------------------------------
+## ----source_functions, warning=FALSE, message=FALSE, results="hide"--------------------------------------------
 
 # SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ##################################
 
@@ -54,7 +54,7 @@ lapply(r_functions, source)
 
 
 
-## ----isimip_data-----------------------------------------------------------------------------------
+## ----isimip_data-----------------------------------------------------------------------------------------------
 
 # RETRIEVE DATA FROM ISIMIP ####################################################
 
@@ -89,7 +89,7 @@ isimip.hist <- foreach(i = 1:length(files.directory),
 stopCluster(cl)
 
 
-## ----arrange_isimip_data, dependson="isimip_data"--------------------------------------------------
+## ----arrange_isimip_data, dependson="isimip_data"--------------------------------------------------------------
 
 # ARRANGE DATA #################################################################
 
@@ -114,7 +114,7 @@ fwrite(isimip.dt, "isimip.dt.csv")
 # varsoc: variable human impacts.
 
 
-## ----plot_isimip_dt_continent, dependson="arrange_isimip_data", fig.height=3.2---------------------
+## ----plot_isimip_dt_continent, dependson="arrange_isimip_data", fig.height=3.2---------------------------------
 
 # PLOT ISIMIP ##################################################################
 
@@ -133,7 +133,7 @@ isimip.dt[, sum(V1, na.rm = TRUE), .(Continent, model, year, climate, social)] %
   theme(legend.position = "top")
 
 
-## ----plot_isimip_dt_global, dependson="arrange_isimip_data", fig.height=2.2, fig.width=3.7---------
+## ----plot_isimip_dt_global, dependson="arrange_isimip_data", fig.height=2.2, fig.width=3.7---------------------
 
 # Global level -----------------------------------------------------------------
 
@@ -146,7 +146,7 @@ isimip.dt[, sum(V1, na.rm = TRUE), .(year, model, climate, social)] %>%
   theme(legend.position = "top")
 
 
-## ----isimip_data_future----------------------------------------------------------------------------
+## ----isimip_data_future----------------------------------------------------------------------------------------
 
 # RETRIEVE PROJECTIONS FROM ISIMIP #############################################
 
@@ -180,7 +180,7 @@ isimip.future <- foreach(i = 1:length(files.directory.projections),
 stopCluster(cl)
 
 
-## ----arrange_isimip_dt_future, dependson="isimip_data_future"--------------------------------------
+## ----arrange_isimip_dt_future, dependson="isimip_data_future"--------------------------------------------------
 
 # ARRANGE DATA #################################################################
 
@@ -209,7 +209,7 @@ isimip.future.dt[, c("model", "climate") := tstrsplit(model, "/")]
 fwrite(isimip.future.dt, "isimip.future.dt.csv")
 
 
-## ----plot_isimip_dt_future, dependson="arrange_isimip_dt_future"-----------------------------------
+## ----plot_isimip_dt_future, dependson="arrange_isimip_dt_future"-----------------------------------------------
 
 # PLOT ISIMIP ##################################################################
 
@@ -226,7 +226,7 @@ isimip.future.dt[, sum(V1, na.rm = TRUE), .(year, Continent, model, climate)] %>
   theme(legend.position = "top")
 
 
-## ----plot_isimip_dt_future_merged, dependson="arrange_isimip_dt_future", fig.height=4--------------
+## ----plot_isimip_dt_future_merged, dependson="arrange_isimip_dt_future", fig.height=4--------------------------
 
 # PLOT ISIMIP MERGED ###########################################################
 
@@ -252,7 +252,7 @@ b <- isimip.future.dt[, sum(V1, na.rm = TRUE), .(year, Continent, model, climate
 plot_grid(a, b, ncol = 1, labels = "auto")
 
 
-## ----anova_isimip, dependson=c("arrange_isimip_data", "arrange_isimip_dt_future")------------------
+## ----anova_isimip, dependson=c("arrange_isimip_data", "arrange_isimip_dt_future")------------------------------
 
 # ANOVA ########################################################################
 
@@ -290,7 +290,7 @@ results <- mclapply(names(functions), function(fun_name) {
 mc.cores = detectCores() * 0.75)
 
 
-## ----plot_anova, dependson="anova_isimip", fig.height=3.2------------------------------------------
+## ----plot_anova, dependson="anova_isimip", fig.height=3.2------------------------------------------------------
 
 # PLOT RESULTS ##################################################################
 
@@ -332,7 +332,7 @@ b <- results.dt %>%
 plot_grid(a, b, ncol = 2, labels = "auto", rel_widths = c(0.72, 0.28))
 
 
-## ----check_combinations, dependson="anova_isimip", fig.height=2.3, fig.width=2.7-------------------
+## ----check_combinations, dependson="anova_isimip", fig.height=2.3, fig.width=2.7-------------------------------
 
 # COUNT COMBINATIONS OF MODEL AND CLIMATE #######################################
 
@@ -348,7 +348,7 @@ unique(isimip.full[, .(model, climate, context)]) %>%
   theme(legend.position = "top")
 
 
-## ----khan_data, cache.lazy=FALSE, eval = FALSE-----------------------------------------------------
+## ----khan_data, cache.lazy=FALSE, eval = FALSE-----------------------------------------------------------------
 # 
 # # KHAN ET AL 2023 DATASET ######################################################
 # 
@@ -396,7 +396,7 @@ unique(isimip.full[, .(model, climate, context)]) %>%
 # stopCluster(cl)
 
 
-## ----arrange_khan_data, dependson="khan_data", cache.lazy=FALSE, eval = FALSE----------------------
+## ----arrange_khan_data, dependson="khan_data", cache.lazy=FALSE, eval = FALSE----------------------------------
 # 
 # # ARRANGE DATA #################################################################
 # 
@@ -415,7 +415,7 @@ unique(isimip.full[, .(model, climate, context)]) %>%
 # fwrite(khan.dt.continent, "khan.dt.continent.csv")
 
 
-## ----plot_khan_continental, dependson="arrange_khan_data", fig.height=2.3, fig.width=4, eval=FALSE----
+## ----plot_khan_continental, dependson="arrange_khan_data", fig.height=2.3, fig.width=4, eval=FALSE-------------
 # 
 # # PLOT #########################################################################
 # 
@@ -432,7 +432,7 @@ unique(isimip.full[, .(model, climate, context)]) %>%
 # plot.khan.continental
 
 
-## ----plot_khan_global, dependson="arrange_khan_data", fig.height=2.3, fig.width=4, eval = FALSE----
+## ----plot_khan_global, dependson="arrange_khan_data", fig.height=2.3, fig.width=4, eval = FALSE----------------
 # 
 # # PLOT #########################################################################
 # 
@@ -458,7 +458,7 @@ unique(isimip.full[, .(model, climate, context)]) %>%
 # 
 
 
-## ----plot_khan_ssp_rcp, dependson="arrange_khan_data", eval = FALSE--------------------------------
+## ----plot_khan_ssp_rcp, dependson="arrange_khan_data", eval = FALSE--------------------------------------------
 # 
 # # PLOT SSPS VS RCPS ############################################################
 # 
@@ -472,7 +472,7 @@ unique(isimip.full[, .(model, climate, context)]) %>%
 # 
 
 
-## ----merge_khan_isimip, dependson="anova_isimip", fig.height=1.7, fig.width=6.5--------------------
+## ----merge_khan_isimip, dependson="anova_isimip", fig.height=1.7, fig.width=6.5--------------------------------
 
 # MERGE KHAN ET AL DATA WITH ISIMIP ############################################
 
@@ -508,7 +508,7 @@ merged.dt[year %in% c(2030, 2040, 2050),
   .[, .(sum_min = sum(min), sum_max = sum(max)), year]
 
 
-## ----naomi_data------------------------------------------------------------------------------------
+## ----naomi_data------------------------------------------------------------------------------------------------
 
 # NAOMI DATASET #################################################################
 
@@ -549,7 +549,7 @@ references.full.dt[, publication.date:= str_extract(author, "\\d{4}")] %>%
   .[, publication.date:= as.numeric(publication.date)]
 
 
-## ----naomi_features, dependson="naomi_data", fig.height=1.8, fig.width=2---------------------------
+## ----naomi_features, dependson="naomi_data", fig.height=1.8, fig.width=2---------------------------------------
 
 # FEATURES OF THE DATASET ######################################################
 
@@ -600,7 +600,18 @@ cumulative.iww <- references.full.dt[, .(title, publication.date, variable)] %>%
 cumulative.iww
 
 
-## ----plot_naomi, dependson="naomi_data", fig.height=3.5, fig.width=6-------------------------------
+## ----histogram_data_points, dependson="naomi_data", fig.height=2, fig.width=2----------------------------------
+
+# DISTRIBUTION OF DATA POINTS THROUGH YEARS @###################################
+
+references.full.dt[variable == "iww" & region == "global", .N, estimation.year] %>%
+  ggplot(., aes(estimation.year, N)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Year", y = "Nº data points") +
+  theme_AP()
+
+
+## ----plot_naomi, dependson="naomi_data", fig.height=3.5, fig.width=6-------------------------------------------
 
 # PLOT ALL ESTIMATIONS #########################################################
 
@@ -630,7 +641,7 @@ references.full.dt[variable == "iwc" & region == "global"] %>%
 
 
 
-## ----forking_paths, dependson="naomi_data"---------------------------------------------------------
+## ----forking_paths, dependson="naomi_data"---------------------------------------------------------------------
 
 # DEFINE THE UNCERTAINTY SPACE ##################################################
 
@@ -688,7 +699,7 @@ for (i in 1:nrow(forking_paths)) {
 }
 
 
-## ----naomi_arrange, dependson="forking_paths"------------------------------------------------------
+## ----naomi_arrange, dependson="forking_paths"------------------------------------------------------------------
 
 # ARRANGE DATA ##################################################################
 
@@ -698,6 +709,10 @@ output.dt <- lapply(trend, function(x) x[["results"]]) %>%
   setnames(., "V1", "trend")
 
 final.dt <- cbind(forking_paths, output.dt)
+
+# Export simulations -----------------------------------------------------------
+
+fwrite(final.dt, "forking.paths.dataset.csv")
 
 # Print the fraction of simulations in each classification ---------------------
 
@@ -720,30 +735,15 @@ final.dt %>%
   .[, sum(fraction)]
 
 
-## ----examples_plots, dependson="forking_paths"-----------------------------------------------------
+## ----examples_plots, dependson="forking_paths", fig.height=3.5, fig.width=3.5, warning=FALSE-------------------
 
-# PLOTS EXAMPLE FORKING PATHS ##################################################
+# PLOTS FORKING PATHS EXAMPLES #################################################
 
 plots.dt <- lapply(trend, function(x) x[["plot"]]) 
-length(plots.dt)
 
-plot_plots_forking_paths_fun <- function(simulation) {
-  
-  out <- plots.dt[[simulation]] +
-    theme_AP() + 
-    scale_x_continuous(breaks = breaks_pretty(n = 3)) +
-    labs(x = "Publication year", y = " + Uncertainty") +
-    ggtitle(paste("Target year:", final.dt[simulation, "target_year"])) +
-    theme(axis.ticks.y = element_blank(), 
-          axis.text.y = element_blank(),
-          plot.title = element_text(size = 7.3)) 
-  
-  return(out)
-}
-
-random.plots <- c(1097, 1099, 1105, 2110)
-decreasing.plots <- c(1108, 1569, 1601, 2124)
-increasing.plots <- c(10, 1350, 3, 2120)
+random.plots <- c(1, 986, 345)
+decreasing.plots <- c(1093, 556, 4)
+increasing.plots <- c(10, 602, 770)
 
 out.random <- out.decreasing <- out.increasing <- list()
 
@@ -757,21 +757,19 @@ for (i in 1:length(random.plots)) {
 pt.random <- plot_grid(out.random[[1]] + geom_smooth() + labs(x = "", y = "+ Uncertainty"), 
                        out.random[[2]] + geom_smooth() + labs(x = "", y = ""), 
                        out.random[[3]] + geom_smooth() + labs(x = "", y = ""), 
-                       out.random[[4]] + geom_smooth() + labs(x = "", y = ""), 
-                       ncol = 4)
-pt.decreasing <- plot_grid(out.decreasing[[1]] + geom_smooth(method = "lm", se = F) + labs(x = "", y = "+ Uncertainty"), 
+                       ncol = 3)
+
+pt.decreasing <- plot_grid(out.decreasing[[1]] + geom_smooth() + labs(x = "", y = "+ Uncertainty"), 
                            out.decreasing[[2]] + geom_smooth() + labs(x = "", y = ""), 
-                           out.decreasing[[3]] + geom_smooth() + labs(x = "", y = ""), 
-                           out.decreasing[[4]] + geom_smooth(method = "lm") + labs(x = "", y = ""), 
-                           ncol = 4)
+                           out.decreasing[[3]] + geom_smooth(method = "lm", se = F) + labs(x = "", y = ""), 
+                           ncol = 3)
+
 pt.increasing <- plot_grid(out.increasing[[1]] + geom_smooth(method = "lm", se = F), 
                            out.increasing[[2]] + geom_smooth() + labs(x = "Publication year", y = ""), 
                            out.increasing[[3]] + geom_smooth() + labs(x = "Publication year", y = ""), 
-                           out.increasing[[4]] + geom_smooth(method = "lm") + labs(x = "Publication year", y = ""), 
-                           ncol = 4)
+                           ncol = 3)
 
 plot_grid(pt.random, pt.decreasing, pt.increasing, ncol = 1, labels = "auto")
-
 
 
 ## ----plot_results_forking_paths, dependson=c("naomi_arrange", "forking_paths"), fig.height=2.2, fig.width=2.2----
@@ -795,7 +793,7 @@ plot.fraction <- final.dt[, .(total = .N), trend] %>%
 plot.fraction 
 
 
-## ----random_forest, dependson=c("naomi_arrange", "forking_paths"), fig.width=3.5, fig.height=2-----
+## ----random_forest, dependson=c("naomi_arrange", "forking_paths"), fig.width=3.5, fig.height=2-----------------
 
 # RANDOM FOREST ################################################################
 
@@ -855,7 +853,7 @@ final.faceted.plot
 
 
 
-## ----plot_forking_paths_faceted, dependson=c("naomi_arrange", "forking_paths"), fig.height=4, fig.width=4----
+## ----plot_forking_paths_faceted, dependson=c("naomi_arrange", "forking_paths"), fig.height=4, fig.width=4------
 
 # RESULTS FACETED BY INTERVAL AND TARGET YEAR, X AXIS METRICS ###################
 
@@ -881,7 +879,25 @@ bottom2 <- plot_grid(left, plot.faceted.metrics, ncol = 2, labels = c("", "e"))
 plot_grid(plot.iww, bottom2, rel_heights = c(0.42, 0.58), ncol = 1, labels = c("a", ""))
 
 
-## ----session_information---------------------------------------------------------------------------
+## ----faceted_plot, dependson="naomi_arrange", fig.height=3.8, fig.width=5.5------------------------------------
+
+final.dt %>%
+  melt(., measure.vars = c("target_year", "target_year_interval", "interval", 
+                           "inclusion_criteria", "rolling_window_factor", "metric")) %>%
+  .[, .N, .(variable, value, trend)] %>%
+  .[ , value := gsub("_normalized", "_n", value)] %>%
+  ggplot(., aes(value, N, fill = trend)) +
+  scale_fill_manual(values = selected_colors, name = "Uncertainty") +
+  geom_bar(stat = "identity", position = position_dodge(0.5)) +
+  facet_wrap(~variable, scale = "free") +
+  labs(x = "", y = "Nº simulations") +
+  theme_AP() + 
+  coord_flip() +
+  theme(legend.position = "none")
+
+
+
+## ----session_information---------------------------------------------------------------------------------------
 
 # SESSION INFORMATION ##########################################################
 

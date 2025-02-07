@@ -5,9 +5,9 @@
 
 [Arnald Puy](https://www.arnaldpuy.com/), Carmen Aguiló, Seth N. Linga, Naomi Clarke, Nanxin Wei
 
-This study compiles the estimations of irrigation water withdrawals produced between
-1970 and 2024 and analyzes the spread of the uncertainty to see if it has increased
-or decreased over time.
+This study compiles c. 1,300 irrigation water withdrawal estimates (1990–2100) from 
+literature published between 1970 and 2024 and analyzes uncertainty spread to 
+determine whether it has increased or decreased over time
 
 ## Abstract
 

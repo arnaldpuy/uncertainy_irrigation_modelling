@@ -93,7 +93,7 @@ lapply(r_functions, source)
 
 ```{r naomi_data}
 
-# NAOMI DATASET #################################################################
+# NAOMI DATASET ################################################################
 
 references.projected <- data.table(read.xlsx("./data/references_projection.xlsx")) %>%
   .[, focus:= "projected"]
@@ -153,12 +153,12 @@ nrow(references.full.dt[variable == "iww" & region == "global"])
 references.full.dt[region == "global", unique(title), variable] %>%
   .[, .N, variable]
 
-# Number of data points for 2000, 2050, 2070, 2100 -----------------------------
+# Number of data points for each target year -----------------------------------
 
 references.full.dt[variable == "iww" & region == "global" & 
                      estimation.year %in% target_year, .N, estimation.year]
 
-# Number of unique studies estimating for 2000, 2050, 2070, 2100 ---------------
+# Number of unique studies estimating for each target year ---------------------
 
 references.full.dt[variable == "iww" & region == "global" & 
                      estimation.year %in% target_year, unique(title), estimation.year] %>%
@@ -194,7 +194,7 @@ cumulative.iww
 references.full.dt[variable == "iww" & region == "global", .N, estimation.year] %>%
   ggplot(., aes(estimation.year, N)) +
   geom_bar(stat = "identity") +
-  labs(x = "Year", y = "Nº data points") +
+  labs(x = "Estimation year", y = "Nº data points") +
   theme_AP()
 ```
 
@@ -209,7 +209,7 @@ plot.iww <- references.full.dt[variable == "iww" & region == "global"] %>%
   na.omit() %>%
   ggplot(., aes(estimation.year, value, color = author, group = study)) +
   geom_point(alpha = def.alpha, size = 0.5) +
-  labs(x = "Year", y = bquote("Km"^3)) +
+  labs(x = "Estimation year", y = bquote("Km"^3)) +
   scale_color_discrete(name = "") +
   geom_line(alpha = def.alpha) +
   theme_AP() +
@@ -285,11 +285,17 @@ nrow(forking_paths)
 
 # RUN MODEL #####################################################################
 
+# Select only simulations at the global level of iww ---------------------------
+
+dt <- references.full.dt[variable == "iww" & region == "global"]
+
+# Run simulations --------------------------------------------------------------
+
 trend <- list()
 
 for (i in 1:nrow(forking_paths)) {
   
-  trend[[i]] <- forking_paths_fun(dt = references.full.dt,
+  trend[[i]] <- forking_paths_fun(dt = dt,
                                   target_year = forking_paths[[i, "target_year"]], 
                                   target_year_interval = forking_paths[[i, "target_year_interval"]],
                                   interval = forking_paths[[i, "interval"]], 

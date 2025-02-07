@@ -13,7 +13,7 @@ or decreased over time.
 
 *In the last decades, efforts to estimate global irrigation water withdrawals have 
 intensified to better quantify human impacts on the water cycle. Through a computational 
-multiverse analysis of 1,200 data points from 40 studies published over a 50 year-span 
+multiverse analysis of 1,200 data points from 46 studies published over a 50 year-span 
 (1974–2025), we find that these efforts have not led to more precise estimates, but to 
 uncertainty evolving randomly through time. Evidence for research reducing uncertainty 
 is just as strong as for research increasing it, with perceived trends fully depending 

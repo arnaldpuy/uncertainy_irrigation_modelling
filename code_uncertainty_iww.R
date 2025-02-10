@@ -1,15 +1,16 @@
-## ----setup, include=FALSE---------------------------------------------------------------------------------------------------------
+## ----setup, include=FALSE-------------------------------------------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE, dev = "pdf", cache = TRUE)
 
 
-## ----warning=FALSE, message=FALSE-------------------------------------------------------------------------------------------------
+## ----warning=FALSE, message=FALSE-----------------------------------------------------------------------------
 
 #   PRELIMINARY FUNCTIONS #######################################################
 
 sensobol::load_packages(c("openxlsx", "data.table", "tidyverse","cowplot", 
                           "benchmarkme", "parallel", "wesanderson", "scales", "ncdf4", 
                           "countrycode", "rworldmap", "sp", "doParallel", "here", "lme4", 
-                          "microbenchmark", "mgcv", "brms", "randomForest", "here"))
+                          "microbenchmark", "mgcv", "brms", "randomForest", "here", 
+                          "igraph", "ggraph"))
 
 # Create custom theme -----------------------------------------------------------
 
@@ -43,9 +44,9 @@ theme_AP <- function() {
 selected.palette <- "Darjeeling1"
 
 
-## ----source_functions, warning=FALSE, message=FALSE, results="hide"---------------------------------------------------------------
+## ----source_functions, warning=FALSE, message=FALSE, results="hide"-------------------------------------------
 
-# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ##################################
+# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ###################################
 
 # Source all .R files in the "functions" folder --------------------------------
 
@@ -54,7 +55,7 @@ lapply(r_functions, source)
 
 
 
-## ----naomi_data-------------------------------------------------------------------------------------------------------------------
+## ----naomi_data-----------------------------------------------------------------------------------------------
 
 # NAOMI DATASET ################################################################
 
@@ -95,7 +96,7 @@ references.full.dt[, publication.date:= str_extract(author, "\\d{4}")] %>%
   .[, publication.date:= as.numeric(publication.date)]
 
 
-## ----naomi_features, dependson="naomi_data", fig.height=1.8, fig.width=2----------------------------------------------------------
+## ----naomi_features, dependson="naomi_data", fig.height=1.8, fig.width=2--------------------------------------
 
 # FEATURES OF THE DATASET ######################################################
 
@@ -150,18 +151,21 @@ cumulative.iww <- references.full.dt[, .(title, publication.date, variable)] %>%
 cumulative.iww
 
 
-## ----histogram_data_points, dependson="naomi_data", fig.height=2, fig.width=2-----------------------------------------------------
+## ----histogram_data_points, dependson="naomi_data", fig.height=2, fig.width=2---------------------------------
 
 # DISTRIBUTION OF DATA POINTS THROUGH YEARS @###################################
 
-references.full.dt[variable == "iww" & region == "global", .N, estimation.year] %>%
+plot.bar <- references.full.dt[variable == "iww" & region == "global", .N, estimation.year] %>%
   ggplot(., aes(estimation.year, N)) +
   geom_bar(stat = "identity") +
+  scale_x_continuous(breaks = breaks_pretty(n = 3)) +
   labs(x = "Estimation year", y = "Nº data points") +
   theme_AP()
 
+plot.bar
 
-## ----plot_naomi, dependson="naomi_data", fig.height=3.5, fig.width=6--------------------------------------------------------------
+
+## ----plot_naomi, dependson="naomi_data", fig.height=3.5, fig.width=6------------------------------------------
 
 # PLOT ALL ESTIMATIONS #########################################################
 
@@ -195,14 +199,169 @@ references.full.dt[variable == "iwc" & region == "global"] %>%
 
 
 
-## ----plot_iww_below, dependson="plot_naomi", fig.height=7, fig.width=6------------------------------------------------------------
+## ----plot_iww_below, dependson="plot_naomi", fig.height=7, fig.width=6----------------------------------------
 
 plot.iww + 
   theme(legend.position = "bottom", 
         legend.text = element_text(size = 4.8))
 
 
-## ----forking_paths, dependson=c("naomi_data", "naomi_features")-------------------------------------------------------------------
+## ----plot.models, dependson="naomi_features", fig.height=4, fig.width=3---------------------------------------
+ 
+# PLOT NUMBER OF UNIQUE STUDIES PER MODEL ######################################
+
+plot.models <- references.full.dt[variable == "iww" & region == "global"] %>%
+  .[, .(title, doi, model)] %>%
+  .[, model:= tolower(model)] %>%
+  .[, unique(doi), model] %>%
+  .[, model := gsub("(?i)watergap\\s*\\d*\\.?\\d*", "watergap", model, perl = TRUE)] %>%
+  .[, .N, model]  %>%
+  .[, model:= ifelse(is.na(model), "No info", model)] %>%
+  ggplot(., aes(reorder(model, N), N)) +
+  geom_bar(stat = "identity") + 
+  labs(x = "", y = "Nº studies") +
+  coord_flip() +
+  theme_AP() + 
+  theme(axis.text.y = element_text(size = 5.5))
+
+plot.models
+
+
+## ----plot_examples, fig.height=3, fig.width=1.5---------------------------------------------------------------
+
+# PLOT EXAMPLES TO ILLUSTRATE APPROACH #########################################
+
+# Set seed for reproducibility -------------------------------------------------
+
+set.seed(123)
+
+# Create datasets for different SD trends --------------------------------------
+
+data_increasing <- data.frame(
+  period = rep(c("1990-2000", "2000-2010", "2010-2020"), times = c(5, 7, 4)),  
+  value = c(rnorm(5, mean = 5, sd = 0.3),  # Low SD
+            rnorm(7, mean = 7, sd = 0.8),  # Medium SD
+            rnorm(4, mean = 6, sd = 1.5))  # High SD
+)
+
+data_decreasing <- data.frame(
+  period = rep(c("1980-2000", "2000-2020"), times = c(5, 7)),  
+  value = c(rnorm(5, mean = 5, sd = 1.5),  # High SD
+            rnorm(7, mean = 7, sd = 0.8))  # Medium
+)
+
+data_invertedV <- data.frame(
+  period = rep(c("1990-2000", "2000-2010", "2010-2020"), times = c(5, 7, 4)),  
+  value = c(rnorm(5, mean = 5, sd = 0.4),  # Low SD
+            rnorm(7, mean = 7, sd = 1.4),  # High SD (peak in the middle)
+            rnorm(4, mean = 5, sd = 0.4))  # Low SD again
+)
+
+# Function to compute SD and create a ggplot -----------------------------------
+
+create_plot <- function(data, title) {
+  sd_values <- data %>%
+    group_by(period) %>%
+    summarize(sd_value = sd(value) + 3)
+  
+  ggplot(data, aes(x = period, y = value)) +
+    geom_point(size = 1) +
+    geom_point(data = sd_values, aes(x = period, y = sd_value), color = "red", size = 1.5) +  # SD as red dots
+    geom_line(data = sd_values, aes(x = period, y = sd_value, group = 1), color = "red", linewidth = 1) +  # Line connecting SD values
+    theme_AP() +
+    theme(axis.text.x = element_text(size = 5.35), 
+          plot.margin = unit(c(0.1, 0.1, 0, 0.1), "cm")) +
+    scale_y_continuous(breaks = breaks_pretty(n = 3)) +
+    labs(x = "", y = "Value") 
+}
+
+# Generate the three plots -----------------------------------------------------
+
+p1 <- create_plot(data_increasing) 
+p2 <- create_plot(data_decreasing)
+p3 <- create_plot(data_invertedV)
+
+# Merge using plot_grid --------------------------------------------------------
+
+plot.examples.trends.data <- plot_grid(p1, p2, p3, ncol = 1, labels = c("e", "", ""))
+plot.examples.trends.data
+
+
+## ----plotting_forks-------------------------------------------------------------------------------------------
+
+# GRAPHICAL REPRESENTATION OF THE GARDEN OF FORKING PATHS ######################
+
+# Define size of nodes ---------------------------------------------------------
+
+size.nodes <- 1.5
+
+# Create a balanced binary tree with height 3 ----------------------------------
+
+tree <- make_tree(15, children = 2, mode = "out")
+
+# Create a tree plot with all edges highlighted in red -------------------------
+
+all.paths <- ggraph(tree, layout = "dendrogram") +
+  geom_edge_link(color = "red", width = 1) +
+  geom_node_point(size = size.nodes, color = "red") +
+  theme_AP() +
+  labs(x = "", y = "") +
+  theme(legend.position = "none", 
+        axis.ticks = element_blank(), 
+        axis.text.x = element_blank(), 
+        axis.text.y = element_blank())
+
+all.paths
+
+# Create a tree plot with only one analytical path highlighted -----------------
+
+# Define the path to highlight (from root to a specific node) ------------------
+
+highlight_nodes <- c(1, 2, 5, 11)  # Path: 1 → 2 → 5 → 11
+
+highlight_edges <- apply(cbind(head(highlight_nodes, -1), 
+                               tail(highlight_nodes, -1)), 1, function(x) 
+                                 paste(x, collapse = "-"))
+
+# Assign default colors (black) to all edges and nodes -------------------------
+
+E(tree)$edge_color <- "black"
+V(tree)$node_color <- "black"
+
+# Extract edges from the tree and match with highlight_edges -------------------
+
+edge_list <- apply(get.edgelist(tree), 1, function(x) paste(x, collapse = "-"))
+E(tree)$edge_color[edge_list %in% highlight_edges] <- "red"
+
+# Highlight the selected nodes in red -___--------------------------------------
+
+V(tree)$node_color[highlight_nodes] <- "red"
+
+# Plot the tree with explicitly defined colors for both edges and nodes --------
+
+one.path <- ggraph(tree, layout = "dendrogram") +
+  geom_edge_link(aes(edge_color = edge_color), width = 1) +  # Correct edge colors
+  geom_node_point(aes(color = node_color), size = size.nodes) +  # Correct node colors
+  scale_edge_color_manual(values = c("black" = "black", "red" = "red")) +  # Fix for edges
+  scale_color_manual(values = c("black" = "black", "red" = "red")) +  # Fix for nodes
+  theme_AP() + 
+  labs(x = "", y = "") +
+  theme(legend.position = "none", 
+        axis.ticks = element_blank(), 
+        axis.text.x = element_blank(), 
+        axis.text.y = element_blank())
+
+one.path
+
+
+## ----plot_forking_paths, dependson="plotting_forks", fig.height=1.5, fig.width=3------------------------------
+
+# MERGE FORKING PATHS ##########################################################
+
+plot_grid(one.path, all.paths, ncol = 2, labels = c("a", ""))
+
+
+## ----forking_paths, dependson=c("naomi_data", "naomi_features")-----------------------------------------------
 
 # DEFINE THE UNCERTAINTY SPACE ##################################################
 
@@ -266,7 +425,7 @@ for (i in 1:nrow(forking_paths)) {
 }
 
 
-## ----naomi_arrange, dependson="forking_paths"-------------------------------------------------------------------------------------
+## ----naomi_arrange, dependson="forking_paths"-----------------------------------------------------------------
 
 # ARRANGE DATA ##################################################################
 
@@ -302,7 +461,7 @@ final.dt %>%
   .[, sum(fraction)]
 
 
-## ----examples_plots, dependson="forking_paths", fig.height=3.5, fig.width=3.5, warning=FALSE--------------------------------------
+## ----examples_plots, dependson="forking_paths", fig.height=3.5, fig.width=3.5, warning=FALSE------------------
 
 # PLOTS FORKING PATHS EXAMPLES ################################################
 
@@ -340,7 +499,7 @@ plot.examples.trends <- plot_grid(pt.random, pt.decreasing, pt.increasing, ncol 
 plot.examples.trends
 
 
-## ----plot_results_forking_paths, dependson=c("naomi_arrange", "forking_paths"), fig.height=2.2, fig.width=2.2---------------------
+## ----plot_results_forking_paths, dependson=c("naomi_arrange", "forking_paths"), fig.height=2.2, fig.width=2.2----
 
 # PLOT RESULTS #################################################################
 
@@ -361,7 +520,7 @@ plot.fraction <- final.dt[, .(total = .N), trend] %>%
 plot.fraction 
 
 
-## ----random_forest, dependson=c("naomi_arrange", "forking_paths"), fig.width=3.5, fig.height=2------------------------------------
+## ----random_forest, dependson=c("naomi_arrange", "forking_paths"), fig.width=3.5, fig.height=2----------------
 
 # RANDOM FOREST ################################################################
 
@@ -411,7 +570,7 @@ bottom <- plot_grid(cumulative.iww, plot.fraction, plot.rf, ncol = 3, labels = c
 bottom
 
 
-## ----merge_fraction_trend, dependson=c("merge_fraction_rf", "plot_naomi", "forking_paths"), fig.height=5.8, fig.width=6-----------
+## ----merge_fraction_trend, dependson=c("merge_fraction_rf", "plot_naomi", "forking_paths"), fig.height=5.8, fig.width=6----
 
 # 
 final.faceted.plot <- plot_grid(plot.iww, bottom, ncol = 1, labels = c("a", ""), 
@@ -421,7 +580,7 @@ final.faceted.plot
 
 
 
-## ----plot_forking_paths_faceted, dependson=c("naomi_arrange", "forking_paths"), fig.height=4, fig.width=4-------------------------
+## ----plot_forking_paths_faceted, dependson=c("naomi_arrange", "forking_paths"), fig.height=4, fig.width=4-----
 
 # RESULTS FACETED BY INTERVAL AND TARGET YEAR, X AXIS METRICS ###################
 
@@ -453,10 +612,18 @@ left <- plot_grid(cumulative.iww, plot.fraction, ncol = 1, rel_heights = c(0.4, 
                   labels = c("b", "d"))
 bottom <- plot_grid(left, plot.examples.trends, ncol = 2, rel_widths = c(0.3, 0.7), 
                     labels = c("", "c"))
-plot_grid(plot.iww, bottom, ncol = 1, rel_heights = c(0.46, 0.54), labels = c("a", ""))
+plot_grid(plot.iww, bottom, ncol = 1, rel_heights = c(0.5, 0.5), labels = c("a", ""))
 
 
-## ----faceted_plot, dependson="naomi_arrange", fig.height=3.8, fig.width=5.5-------------------------------------------------------
+## ----faceted_plot3, dependson = c("plot_naomi", "merge_fraction_rf", "random_forest", "forking_paths", "plot_results_forking_paths", "examples_plots", "plot.models", "plot_examples", "histogram_data_points"), fig.height=6.5, fig.width=5.5----
+
+left <- plot_grid(cumulative.iww, plot.bar, ncol = 1, labels = c("b", "c"))
+bottom <- plot_grid(left, plot.models, ncol = 2, labels = c("", "d"), rel_widths = c(0.4, 0.6))
+bottom.right <- plot_grid(bottom, plot.examples.trends.data, ncol = 2, rel_widths = c(0.7, 0.3))
+plot_grid(plot.iww, bottom.right, ncol = 1, rel_heights = c(0.5, 0.5), labels = c("a", ""))
+
+
+## ----faceted_plot, dependson="naomi_arrange", fig.height=3.8, fig.width=5.5-----------------------------------
 
 final.dt %>%
   melt(., measure.vars = c("target_year", "target_year_interval", "interval", 
@@ -474,7 +641,7 @@ final.dt %>%
 
 
 
-## ----session_information----------------------------------------------------------------------------------------------------------
+## ----session_information--------------------------------------------------------------------------------------
 
 # SESSION INFORMATION ##########################################################
 

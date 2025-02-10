@@ -6,14 +6,14 @@
 [Arnald Puy](https://www.arnaldpuy.com/), Carmen Aguiló, Seth N. Linga, Naomi Clarke, Nanxin Wei
 
 This study compiles c. 1,300 irrigation water withdrawal estimates (1990–2100) from 
-literature published between 1970 and 2024 and analyzes uncertainty spread to 
-determine whether it has increased or decreased over time
+literature published between 1970 and 2024 and analyzes the uncertainty spread to 
+determine whether it has increased or decreased over time.
 
 ## Abstract
 
 *In the last decades, efforts to estimate global irrigation water withdrawals have 
 intensified to better quantify human impacts on the water cycle. Through a computational 
-multiverse analysis of 1,200 data points from 46 studies published over a 50 year-span 
+multiverse analysis of c. 1,300 data points from 55 studies published over a 50 year-span 
 (1974–2025), we find that these efforts have not led to more precise estimates, but to 
 uncertainty evolving randomly through time. Evidence for research reducing uncertainty 
 is just as strong as for research increasing it, with perceived trends fully depending 

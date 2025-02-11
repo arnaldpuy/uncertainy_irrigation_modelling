@@ -139,7 +139,7 @@ references.full.dt[, publication.date:= str_extract(author, "\\d{4}")] %>%
 
 # Definition of target years ---------------------------------------------------
 
-target_year <- c(2010, 2050, 2070, 2100)
+target_year <- c(2000, 2010, 2050, 2070, 2100)
 
 # Name of different studies ----------------------------------------------------
 
@@ -422,7 +422,7 @@ metrics <- c("cv", "range", "sd", "var", "entropy", "iqr")
 
 # Inclusion criteria -----------------------------------------------------------
 
-inclusion_criteria <- c("all", "exclude_before_1990")
+exclude_before_1990 <- c("yes", "no")
 
 # Rolling windows --------------------------------------------------------------
 
@@ -433,7 +433,7 @@ rolling_window_factor <- c(1, 0.5)
 forking_paths <- expand.grid(target_year = target_year,
                              target_year_interval = target_year_interval,
                              interval = interval,
-                             inclusion_criteria = inclusion_criteria,
+                             exclude_before_1990 = exclude_before_1990,
                              rolling_window_factor = rolling_window_factor,
                              metric = c(metrics, paste(metrics, "_normalized", sep = ""))) %>%
   data.table()
@@ -459,7 +459,7 @@ for (i in 1:nrow(forking_paths)) {
                                   target_year_interval = forking_paths[[i, "target_year_interval"]],
                                   interval = forking_paths[[i, "interval"]], 
                                   rolling_window_factor = forking_paths[[i, "rolling_window_factor"]],
-                                  inclusion_criteria = forking_paths[[i, "inclusion_criteria"]],
+                                  exclude_before_1990 = forking_paths[[i, "exclude_before_1990"]],
                                   metric = forking_paths[[i, "metric"]])
 }
 ```
@@ -538,7 +538,7 @@ plot.examples.trends <- plot_grid(pt.random, pt.decreasing, pt.increasing, ncol 
 plot.examples.trends
 ```
 
-```{r plot_results_forking_paths, dependson=c("naomi_arrange", "forking_paths"), fig.height=2.2, fig.width=2.2}
+```{r plot_results_forking_paths, dependson=c("naomi_arrange", "forking_paths"), fig.height=2.2, fig.width=3}
 
 # PLOT RESULTS #################################################################
 
@@ -554,7 +554,7 @@ plot.fraction <- final.dt[, .(total = .N), trend] %>%
   theme_AP() + 
   theme(axis.ticks.x = element_blank(), 
         axis.text.x = element_blank(), 
-        legend.position = c(0.33, 0.79))
+        legend.position = "right")
 
 plot.fraction 
 ```
@@ -566,7 +566,7 @@ plot.fraction
 # Convert categorical variables to factors -------------------------------------
 
 df <- data.frame(final.dt)
-df$inclusion_criteria <- as.factor(final.dt$inclusion_criteria)
+df$exclude_before_1990 <- as.factor(final.dt$exclude_before_1990)
 df$metric <- as.factor(final.dt$metric)
 df$trend <- as.factor(df$trend)
 df$target_year_interval <- as.factor(df$target_year_interval)
@@ -574,7 +574,7 @@ df$target_year_interval <- as.factor(df$target_year_interval)
 # Train the model --------------------------------------------------------------
 
 rf_model <- randomForest(trend ~ target_year + target_year_interval + interval + 
-                           inclusion_criteria + rolling_window_factor + metric, 
+                           exclude_before_1990 + rolling_window_factor + metric, 
                          data = df, importance = TRUE)
 
 # View variable importance -----------------------------------------------------
@@ -637,7 +637,7 @@ plot.faceted.metrics
 ```
 
 
-```{r final_final_merged, dependson = c("plot_naomi", "merge_fraction_rf", "random_forest", "forking_paths"), fig.height=7, fig.width=6.5}
+```{r final_final_merged, dependson = c("plot_naomi", "merge_fraction_rf", "random_forest", "forking_paths", "plot_results_forking_paths"), fig.height=7, fig.width=6.5}
 
 bottom <- plot_grid(cumulative.iww, plot.fraction, ncol = 2, rel_widths = c(0.4, 0.6), 
                     labels = c("b", "c"))
@@ -665,9 +665,11 @@ plot_grid(plot.iww, bottom.right, ncol = 1, rel_heights = c(0.5, 0.5), labels = 
 
 ```{r faceted_plot, dependson="naomi_arrange", fig.height=3.8, fig.width=5.5}
 
-final.dt %>%
+# SENSITIVITY ANALYSIS PLOT BY FACET ###########################################
+
+plot.sa.facet <- final.dt %>%
   melt(., measure.vars = c("target_year", "target_year_interval", "interval", 
-                           "inclusion_criteria", "rolling_window_factor", "metric")) %>%
+                           "exclude_before_1990", "rolling_window_factor", "metric")) %>%
   .[, .N, .(variable, value, trend)] %>%
   .[ , value := gsub("_normalized", "_n", value)] %>%
   ggplot(., aes(value, N, fill = trend)) +
@@ -679,6 +681,39 @@ final.dt %>%
   coord_flip() +
   theme(legend.position = "none")
 
+plot.sa.facet
+```
+
+```{r sa_indices, dependson="naomi_arrange", fig.height=2, fig.width=3}
+
+# PLOT AVERAGE MINIMAX AS SENSITVITY INDEX #####################################
+
+plot.sa <- final.dt %>%
+  melt(., measure.vars = c("target_year", "target_year_interval", "interval", 
+                           "exclude_before_1990", "rolling_window_factor", "metric")) %>%
+  .[, .N, .(variable, value, trend)] %>%
+  .[, .(minimax = max(N) - min(N)), .(variable, trend)] %>%
+  .[, .(mean = mean(minimax), 
+        sd = sd(minimax)), variable] %>%
+  ggplot(., aes(reorder(variable, mean), mean)) +
+  geom_point() + 
+  labs(x = "", y = "mean(minimax)") +
+  coord_flip() + 
+  theme_AP()
+
+plot.sa
+```
+
+```{r merge_sa, dependson=c("faceted_plot", "plot_results_forking_paths"), fig.width=4.5, fig.height=4.5}
+
+# MERGE SENSITIVITY ANALYSIS PLOTS #############################################
+
+legend <- get_legend_fun(plot.fraction + theme(legend.position = "top"))
+top <- plot_grid(plot.fraction + theme(legend.position = "none"), plot.sa, ncol = 2, 
+                 rel_widths = c(0.4, 0.6), labels = c("a", "b"))
+top.with.legend <- plot_grid(legend, top, rel_heights = c(0.1, 0.9), ncol = 1)
+plot_grid(top.with.legend, plot.sa.facet, ncol = 1, rel_heights = c(0.38, 0.62), 
+          labels = c("", "c"))
 ```
 \newpage
 

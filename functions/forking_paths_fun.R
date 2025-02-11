@@ -118,7 +118,7 @@ check_order_fun <- function(data) {
 
 # FUNCTION TO EXPLORE FORKING PATHS ############################################
 
-forking_paths_fun <- function(dt, target_year, interval, inclusion_criteria, 
+forking_paths_fun <- function(dt, target_year, interval, exclude_before_1990, 
                               metric, rolling_window_factor, target_year_interval) {
   
   # Define target year and target year interval --------------------------------
@@ -147,7 +147,7 @@ forking_paths_fun <- function(dt, target_year, interval, inclusion_criteria,
   
   # Apply inclusion criteria fork ----------------------------------------------
   
-  if (inclusion_criteria == "exclude_before_1990") {
+  if (exclude_before_1990 == "yes") {
     
     df_filtered <- df_filtered[publication.date >= 1990]
   }

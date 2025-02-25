@@ -104,11 +104,11 @@ check_order_fun <- function(data) {
   
   if (all(diffs > 0)) {
     
-    return("Ascending")
+    return("Increase")
     
   } else if (all(diffs < 0)) {
     
-    return("Descending")
+    return("Decrease")
     
   } else {
     
@@ -118,8 +118,10 @@ check_order_fun <- function(data) {
 
 # FUNCTION TO EXPLORE FORKING PATHS ############################################
 
-forking_paths_fun <- function(dt, target_year, interval, exclude_before_1990, 
-                              metric, rolling_window_factor, target_year_interval) {
+forking_paths_fun <- function(dt, target_year, interval, metric, 
+                              rolling_window_factor, target_year_interval) {
+  
+  target_year_original <- target_year
   
   # Define target year and target year interval --------------------------------
   
@@ -127,30 +129,26 @@ forking_paths_fun <- function(dt, target_year, interval, exclude_before_1990,
     
     if (target_year == 2000) {
       
-      target_year <- c(target_year, target_year + 10)
+      target_year <- target_year:(target_year + 10)
+      
       
     } else if (target_year == 2100) {
       
-      target_year <- c(target_year - 10, target_year)
+      target_year <- (target_year - 10):target_year
       
     } else {
       
-      target_year <- c(target_year - 10, target_year + 10)
+      target_year <- (target_year - 10):(target_year + 10)
       
     }
+    
+    target_year_original <- paste(min(target_year), "-", max(target_year), sep = "")
     
   }
   
   # Filter based on target_year ------------------------------------------------
   
   df_filtered <- dt[estimation.year %in% target_year] 
-  
-  # Apply inclusion criteria fork ----------------------------------------------
-  
-  if (exclude_before_1990 == "yes") {
-    
-    df_filtered <- df_filtered[publication.date >= 1990]
-  }
   
   # Create periods -------------------------------------------------------------
   
@@ -172,11 +170,13 @@ forking_paths_fun <- function(dt, target_year, interval, exclude_before_1990,
   })]
   
   unique.studies <- df_filtered[, uniqueN(title), publication_period]
+  unique.models <- df_filtered[, uniqueN(model), publication_period]
   
   dt <- df_filtered[, .(uncertainty = calculate_uncertainty_fun(.SD, metric = metric)), 
                     .(period_midpoint, publication_period)] %>%
     na.omit() %>%
     merge(., unique.studies, by = "publication_period") %>%
+    merge(., unique.models, by = "publication_period") %>%
     setorder(., period_midpoint)
   
   # Check order of the points --------------------------------------------------
@@ -186,11 +186,23 @@ forking_paths_fun <- function(dt, target_year, interval, exclude_before_1990,
   # Draw plots for each simulation ---------------------------------------------
   
   plot <- ggplot(dt, aes(period_midpoint, uncertainty)) +
-    geom_point() 
+    geom_point(color = "red") +
+    geom_line(color = "red") +
+    labs(y = metric, x = "") +
+    scale_y_continuous(breaks = breaks_pretty(n = 2)) +
+    scale_x_continuous(breaks = breaks_pretty(n = 2)) +
+    theme_AP() +
+    theme(axis.text.x = element_text(size = 6.3), 
+          axis.text.y = element_text(size = 6.3),
+          axis.title.y = element_text(size = 6.5),
+          plot.margin = unit(c(0.05, 0.05, 0, 0.05), "cm")) + 
+    annotate("text", x = min(dt$period_midpoint) + 0.5, y = max(dt$uncertainty), 
+             label = target_year_original, hjust = 0, vjust = 1, 
+             size = 2)
   
-  out <- list(output, plot)
+  out <- list(output, df_filtered, dt, plot)
   
-  names(out) <- c("results", "plot")
+  names(out) <- c("results", "data", "data_aggregated", "plot")
   
   return(out)
 }

@@ -82,7 +82,7 @@ selected.palette <- "Darjeeling1"
 
 ```{r source_functions, warning=FALSE, message=FALSE, results="hide"}
 
-# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ##################################
+# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ###################################
 
 # Source all .R files in the "functions" folder --------------------------------
 
@@ -206,7 +206,7 @@ plot.bar <- references.full.dt[variable == "iww" & region == "global", .N, estim
   ggplot(., aes(estimation.year, N)) +
   geom_bar(stat = "identity") +
   scale_x_continuous(breaks = breaks_pretty(n = 3)) +
-  labs(x = "Estimation year", y = "Nº data points") +
+  labs(x = "Target year of estimation", y = "Nº estimations") +
   theme_AP()
 
 plot.bar
@@ -536,7 +536,7 @@ forking_paths <- expand.grid(target_year = target_year,
                              target_year_interval = target_year_interval,
                              interval = interval,
                              rolling_window_factor = rolling_window_factor,
-                             metric = c(metrics, paste(metrics, "_normalized", sep = ""))) %>%
+                             metric = metrics) %>%
   data.table()
 
 # Number of simulations --------------------------------------------------------
@@ -576,10 +576,17 @@ output.dt <- lapply(trend, function(x) x[["results"]]) %>%
 
 final.dt <- cbind(forking_paths, output.dt)
 
+# ARRANGE DATA PRIMARY #########################################################
+
+data.dt <- lapply(trend, function(x) x[["data"]]) %>%
+  rbindlist(., idcol = "row") %>%
+  merge(., final.dt, by = "row")
+
 # Export simulations -----------------------------------------------------------
 
 fwrite(final.dt, "forking.paths.dataset.csv")
 write.xlsx(final.dt, "forking.paths.dataset.xlsx")
+fwrite(data.dt, "data.dt.csv")
 
 # Print the fraction of simulations in each classification ---------------------
 
@@ -610,18 +617,18 @@ plots.dt <- lapply(trend, function(x) x[["plot"]])
 
 # Increasing trends ------------------------------------------------------------
 
-plots.increasing <- plot_grid(plots.dt[[15]], plots.dt[[667]], plots.dt[[117]], 
-                              plots.dt[[644]], ncol = 1)
+plots.increasing <- plot_grid(plots.dt[[7]], plots.dt[[11]], plots.dt[[278]], 
+                              plots.dt[[226]], ncol = 1)
 
 # Decreasing trend ------------------------------------------------------------
 
-plots.decreasing <- plot_grid(plots.dt[[44]], plots.dt[[600]], plots.dt[[155]], 
-                              plots.dt[[628]], ncol = 1)
+plots.decreasing <- plot_grid(plots.dt[[4]], plots.dt[[69]], plots.dt[[100]], 
+                              plots.dt[[142]], ncol = 1)
 
 # Random trend -----------------------------------------------------------------
 
-plots.random <- plot_grid(plots.dt[[34]], plots.dt[[2]], plots.dt[[616]], 
-                          plots.dt[[579]], ncol = 1)
+plots.random <- plot_grid(plots.dt[[1]], plots.dt[[3]], plots.dt[[33]], 
+                          plots.dt[[340]], ncol = 1)
 
 # Merge ------------------------------------------------------------------------
 
@@ -670,7 +677,7 @@ df$target_year_interval <- as.factor(df$target_year_interval)
 rf_model <- randomForest(trend ~ target_year + target_year_interval + interval + 
                            rolling_window_factor + metric, 
                          data = df, importance = TRUE, ntree = 5000, 
-                         classwt = c(1.5, 2, 1), mtry = 3)
+                         classwt = c(1.5, 1.5, 1), mtry = 3)
 
 # Check model summary ----------------------------------------------------------
 
@@ -778,6 +785,12 @@ plot_grid(legend, bottom, rel_heights = c(0.13, 0.87), ncol = 1)
 ```
 
 
+```{r merge_rf, fig.height=2, fig.width=4.5}
+
+plotp1 <- plot_grid(legend, plot.predict, ncol = 1, rel_heights = c(0.15, 0.85))
+plotp1
+```
+
 ```{r tree_plot}
 
 library(rpart)
@@ -816,7 +829,7 @@ plot_grid(plot.iww, bottom.right, ncol = 1, rel_heights = c(0.5, 0.5), labels = 
 
 ```{r faceted_plot4, dependson = c("plot_naomi", "merge_fraction_rf", "random_forest", "forking_paths", "plot_results_forking_paths", "examples_plots", "plot.models", "plot_examples", "histogram_data_points"), fig.height=6.5, fig.width=6}
 
-# MERGE SA #####################################################################
+# MERGE SA ######################################################################
 
 plot.examples.trends.data <-plot_grid(p1, p2, p3, ncol = 1)
 left <- plot_grid(cumulative.iww, plot.bar, ncol = 1, labels = c("b", "c"))
@@ -857,7 +870,7 @@ plot.sa.facet
 # MERGE SENSITIVITY ANALYSIS PLOTS #############################################
 
 legend <- get_legend_fun(plot.fraction + theme(legend.position = "top"))
-top <- plot_grid(plot.fraction + theme(legend.position = "none"), plot.rf, ncol = 2, 
+top <- plot_grid(plot.fraction + theme(legend.position = "none"), plot.multiway, ncol = 2, 
                  rel_widths = c(0.4, 0.6), labels = c("b", "c"))
 top.with.legend <- plot_grid(legend, top, rel_heights = c(0.1, 0.9), ncol = 1)
 
@@ -868,6 +881,113 @@ plot_grid(left, plot.sa.facet, ncol = 2, rel_widths = c(0.67, 0.33),
 
 ```
 
+```{r check_metric_effect, dependson=c("forking_paths", "naomi_arrange"), fig.height=1.8, fig.width=5, warning=FALSE}
+
+# CHECK METRIC EFFECT ###########################################################
+
+data.dt <- lapply(trend, function(x) x[["data"]]) %>%
+  rbindlist(., idcol = "row") %>%
+  .[order(publication_period)]
+
+# Plot trends based on metric 1 ------------------------------------------------
+
+row.id <- 4
+
+final.dt[row %in% seq(row.id, nrow(forking_paths), 60)]
+tmp <-  data.dt[row == row.id] %>%
+  merge(., final.dt, by = "row")
+metrics <- c("cv", "sd", "entropy")
+
+results <- lapply(metrics, function(m) 
+   tmp %>%
+      .[, calculate_uncertainty_fun(data = .SD, metric = m), .(publication_period, period_midpoint)] %>%
+      .[order(publication_period)] %>%
+      .[!V1 == 0] %>%
+     .[, trend:= lapply(.SD, check_order_fun), .SDcols = "V1"]
+  )
+
+names(results) <- metrics
+
+data.trend <- lapply(results, function(x) 
+  x[, scaled:= scale_to_range_fun(data = .SD, column = "V1", 
+                                  ref_data = tmp, ref_column = "value")]) %>%
+  lapply(., data.table) %>%
+  rbindlist(., idcol = "metric") 
+
+p1 <- tmp %>%
+  .[!is.na(publication_period)] %>%
+  ggplot(., aes(publication_period, value)) +
+  geom_point(size = 0.3) + 
+  geom_line(data = data.trend, aes(x = publication_period, 
+                                   y = scaled, lty = metric, group = metric, 
+                                   color = trend),
+            linewidth = 0.5) +  
+  scale_color_manual(values = c("Increase" = "red", "Decrease" = "darkgreen", 
+                                "Random" = "orange")) +
+  guides(color = "none") +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  theme_AP() +
+  labs(x = "", y = bquote("Km"^3), linetype = NULL) +
+  theme(axis.text.x = element_text(size = 6.3), 
+        axis.text.y = element_text(size = 6.3),
+        axis.title.y = element_text(size = 6.5),
+        plot.margin = unit(c(0.05, 0.05, 0, 0.05), "cm")) + 
+  annotate("text", x = 0.1 + 0.5, y = max(tmp$value), 
+           label = unique(tmp$target_year), hjust = 0, vjust = 1, 
+           size = 2)
+
+
+# Plot trends based on metric 2 ------------------------------------------------
+
+row.id <- 7
+
+final.dt[row %in% seq(row.id, nrow(forking_paths), 60)]
+tmp <-  data.dt[row == row.id] %>%
+  merge(., final.dt, by = "row")
+metrics <- c("range", "cv", "sd")
+
+results <- lapply(metrics, function(m) 
+  tmp %>%
+    .[, calculate_uncertainty_fun(data = .SD, metric = m), .(publication_period, period_midpoint)] %>%
+    .[order(publication_period)] %>%
+    .[!V1 == 0] %>%
+    .[, trend:= lapply(.SD, check_order_fun), .SDcols = "V1"]
+)
+
+
+names(results) <- metrics
+
+data.trend <- lapply(results, function(x) 
+  x[, scaled:= scale_to_range_fun(data = .SD, column = "V1", ref_data = tmp, 
+                                  ref_column = "value")]) %>%
+  lapply(., data.table) %>%
+  rbindlist(., idcol = "metric") 
+
+p2 <- tmp %>%
+  .[!is.na(publication_period)] %>%
+  ggplot(., aes(publication_period, value)) +
+  geom_point(size = 0.3) + 
+  geom_line(data = data.trend, aes(x = publication_period, 
+                                   y = scaled, color = trend, 
+                                   group = metric, lty = metric),
+            linewidth = 0.5) +  
+  scale_color_manual(values = c("Increase" = "red", "Decrease" = "darkgreen", 
+                                "Random" = "orange")) +
+  guides(color = "none") +
+  labs(x = "", y = bquote("Km"^3), linetype = NULL) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  theme_AP() +
+  theme(axis.text.x = element_text(size = 6.3), 
+        axis.text.y = element_text(size = 6.3),
+        axis.title.y = element_text(size = 6.5),
+        plot.margin = unit(c(0.05, 0.05, 0, 0.05), "cm")) + 
+  annotate("text", x = 0.1 + 0.5, y = max(tmp$value), 
+           label = unique(tmp$target_year), hjust = 0, vjust = 1, 
+           size = 2)
+
+
+plot_grid(p1, p2, ncol = 2, labels = "auto")
+```
 \newpage
 
 # Session information

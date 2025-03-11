@@ -1,11 +1,18 @@
 
 # LINEAR MIXED EFFECTS MODEL ###################################################
 
-lmm_fun <- function(dt) {
+lmm_fun <- function(dt, extended = FALSE) {
   
-  # LMM model ------------------------------------------------------------------
+  # Choose model formula based on the 'extended' parameter ---------------------
+  if (extended) {
+    # Extended formula with scenario and socio.conditions
+    model_lmm <- lmer(estimation ~ model + climate + scenario + socio.conditions + (1 | year), data = dt)
+  } else {
+    # Original formula without scenario and socio.conditions
+    model_lmm <- lmer(estimation ~ model + climate + (1 | year), data = dt)
+  }
   
-  model_lmm <- lmer(estimation ~ model + climate + (1 | year), data = dt)
+  # ANOVA results for fixed effects -------------------------------------------
   
   anova_res <- anova(model_lmm)
   
@@ -17,25 +24,64 @@ lmm_fun <- function(dt) {
   
   # Calculate total variance ---------------------------------------------------
   
-  fixed_effects_var <- sum(anova_res$`Sum Sq`)  # Sum of squares for all fixed effects
+  fixed_effects_var <- sum(anova_res$`Sum Sq`, na.rm = TRUE)  # Sum of squares for all fixed effects
   total_var <- fixed_effects_var + random_var + residual_var
   
   # Calculate proportion of variance explained ---------------------------------
   
-  climate_var <- anova_res["climate", "Sum Sq"] / total_var  # Proportion due to climate
-  model_var <- anova_res["model", "Sum Sq"] / total_var  # Proportion due to model
-  residual_proportion <- residual_var / total_var  # Proportion of residual variance
-  random_effect_proportion <- random_var / total_var  # Proportion of variance due to random effect (year)
+  # Variance for model
+  model_var <- if ("model" %in% rownames(anova_res)) {
+    anova_res["model", "Sum Sq"] / total_var
+  } else {
+    0
+  }
+  
+  # Variance for climate
+  climate_var <- if ("climate" %in% rownames(anova_res)) {
+    anova_res["climate", "Sum Sq"] / total_var
+  } else {
+    0
+  }
+  
+  # Variance for scenario (only if extended = TRUE)
+  scenario_var <- if (extended && "scenario" %in% rownames(anova_res)) {
+    anova_res["scenario", "Sum Sq"] / total_var
+  } else {
+    0
+  }
+  
+  # Variance for socio.conditions (only if extended = TRUE)
+  socio_conditions_var <- if (extended && "socio.conditions" %in% rownames(anova_res)) {
+    anova_res["socio.conditions", "Sum Sq"] / total_var
+  } else {
+    0
+  }
+  
+  # Proportion of variance due to residuals
+  residual_proportion <- residual_var / total_var
+  
+  # Proportion of variance due to random effect (year)
+  random_effect_proportion <- random_var / total_var
   
   # Return results -------------------------------------------------------------
   
-  output <- data.table(
-    climate_variance = climate_var,
-    model_variance = model_var,
-    random_variance = random_effect_proportion,
-    residual_variance = residual_proportion
-  )
+  if (extended) {
+    output <- data.table(
+      climate_variance = climate_var,
+      model_variance = model_var,
+      scenario_variance = scenario_var, 
+      socio_conditions_variance = socio_conditions_var,
+      random_variance = random_effect_proportion,
+      residual_variance = residual_proportion
+    )
+  } else {
+    output <- data.table(
+      climate_variance = climate_var,
+      model_variance = model_var,
+      random_variance = random_effect_proportion,
+      residual_variance = residual_proportion
+    )
+  }
   
   return(output)
-  
 }

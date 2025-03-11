@@ -10,28 +10,19 @@ create_periods_fun <- function(start_year, end_year, interval, rolling_window_fa
   }
   
   # Define step size based on rolling window factor ----------------------------
+  step <- interval * rolling_window_factor  # Ensures 50% overlap if rolling_window_factor = 0.5
   
-  step <- round(interval * rolling_window_factor)  # Round to avoid decimals
+  # Generate start years of periods --------------------------------------------
+  start_dates <- seq(start_year, end_year - interval + 1, by = step)
   
-  # Generate breaks based on step size -----------------------------------------
+  # Define end years of periods -----------------------------------------------
+  end_dates <- start_dates + interval  # `cut()` needs right-open intervals
   
-  breaks <- seq(start_year, end_year, by = step)
-  breaks <- unique(round(breaks))  # Ensure unique integer values
+  # Construct breaks: Must include both first and last breakpoints ------------
+  breaks <- unique(c(start_dates, max(end_dates)))  # Ensures proper binning
   
-  # Ensure 2025 is included in breaks ------------------------------------------
-  
-  if (2025 > max(breaks)) {
-    breaks <- unique(c(breaks, 2025))  # Ensure breaks remain unique
-  }
-  
-  # Define end year for each period based on the "interval" factor -------------
-  
-  end_dates <- breaks[-1] - 1  # The last break is NOT an interval start
-  start_dates <- breaks[-length(breaks)]  # Remove last break from starts
-  
-  # Generate labels (ensure they match number of intervals) --------------------
-  
-  labels <- paste(start_dates, end_dates, sep = "–")
+  # Generate labels (one fewer than breaks) ------------------------------------
+  labels <- paste(start_dates, end_dates - 1, sep = "–")  # Left-closed, right-open format
   
   return(list(breaks = breaks, labels = labels))
 }
@@ -169,15 +160,21 @@ forking_paths_fun <- function(dt, target_year, interval, metric,
     mean(years)
   })]
   
-  unique.studies <- df_filtered[, uniqueN(title), publication_period]
-  unique.models <- df_filtered[, uniqueN(model), publication_period]
+  unique.studies <- df_filtered[, .(unique.studies = uniqueN(title)), publication_period]
+  unique.models <- df_filtered[, .(unique.models = uniqueN(model)), publication_period]
+  number.estimates <- df_filtered[, .(number.estimates = .N), publication_period]
   
   dt <- df_filtered[, .(uncertainty = calculate_uncertainty_fun(.SD, metric = metric)), 
                     .(period_midpoint, publication_period)] %>%
     na.omit() %>%
     merge(., unique.studies, by = "publication_period") %>%
     merge(., unique.models, by = "publication_period") %>%
+    merge(., number.estimates, by = "publication_period") %>%
     setorder(., period_midpoint)
+  
+  # Remove those periods for which there is no spread (only one estimate) ------
+  
+  dt <- dt[!number.estimates == 1]
   
   # Check order of the points --------------------------------------------------
   

@@ -82,7 +82,7 @@ selected.palette <- "Darjeeling1"
 
 ```{r source_functions, warning=FALSE, message=FALSE, results="hide"}
 
-# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ###################################
+# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ##################################
 
 # Source all .R files in the "functions" folder --------------------------------
 
@@ -642,7 +642,7 @@ plots.examples.trends
 
 # PLOT RESULTS #################################################################
 
-selected_colors <- c("Increase" = "red", "Decrease" = "darkgreen", "Random" = "orange")
+selected_colors <- c("Increase" = "red", "Decrease" = "darkgreen", "Unstable" = "orange")
 
 plot.fraction <- final.dt[, .(total = .N), trend] %>%
   .[, fraction:= total / nrow(output.dt)] %>%
@@ -743,7 +743,7 @@ plot.multiway
 
 # Redefine facet labels --------------------------------------------------------
 
-supp.labs <- c("Decrease", "Increase", "Random")
+supp.labs <- c("Decrease", "Increase", "Unstable")
 names(supp.labs) <- paste("probability_", supp.labs, sep = "")
 
 # Plot -------------------------------------------------------------------------
@@ -865,7 +865,7 @@ plot.sa.facet <- final.dt %>%
 plot.sa.facet
 ```
 
-```{r merge_sa3, dependson=c("merge_sa", "examples_plots", "faceted_plot"), fig.height=6.1, fig.width=5.1}
+```{r merge_sa3, dependson=c("merge_sa", "examples_plots", "faceted_plot"), fig.height=6.1, fig.width=5.5}
 
 # MERGE SENSITIVITY ANALYSIS PLOTS #############################################
 
@@ -881,7 +881,7 @@ plot_grid(left, plot.sa.facet, ncol = 2, rel_widths = c(0.67, 0.33),
 
 ```
 
-```{r check_metric_effect, dependson=c("forking_paths", "naomi_arrange"), fig.height=1.8, fig.width=5, warning=FALSE}
+```{r check_metric_effect, dependson=c("forking_paths", "naomi_arrange"), fig.height=2.2, fig.width=5.5, warning=FALSE}
 
 # CHECK METRIC EFFECT ###########################################################
 
@@ -903,7 +903,8 @@ results <- lapply(metrics, function(m)
       .[, calculate_uncertainty_fun(data = .SD, metric = m), .(publication_period, period_midpoint)] %>%
       .[order(publication_period)] %>%
       .[!V1 == 0] %>%
-     .[, trend:= lapply(.SD, check_order_fun), .SDcols = "V1"]
+     .[, trend:= lapply(.SD, check_order_fun), .SDcols = "V1"] %>%
+      .[, publication_period:= gsub("–", "-", publication_period)]
   )
 
 names(results) <- metrics
@@ -916,6 +917,7 @@ data.trend <- lapply(results, function(x)
 
 p1 <- tmp %>%
   .[!is.na(publication_period)] %>%
+  .[, publication_period:= gsub("–", "-", publication_period)] %>%
   ggplot(., aes(publication_period, value)) +
   geom_point(size = 0.3) + 
   geom_line(data = data.trend, aes(x = publication_period, 
@@ -923,8 +925,30 @@ p1 <- tmp %>%
                                    color = trend),
             linewidth = 0.5) +  
   scale_color_manual(values = c("Increase" = "red", "Decrease" = "darkgreen", 
-                                "Random" = "orange")) +
-  guides(color = "none") +
+                                "Unstable" = "orange")) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  theme_AP() +
+  labs(x = "", y = bquote("Km"^3), linetype = NULL) +
+  theme(axis.text.x = element_text(size = 6.3), 
+        axis.text.y = element_text(size = 6.3),
+        axis.title.y = element_text(size = 6.5),
+        plot.margin = unit(c(0.05, 0.05, 0, 0.05), "cm"), 
+        legend.position = "top") + 
+  annotate("text", x = 0.1 + 0.5, y = max(tmp$value), 
+           label = unique(tmp$target_year), hjust = 0, vjust = 1, 
+           size = 2)
+
+p.withoutline <- tmp %>%
+  .[!is.na(publication_period)] %>%
+  ggplot(., aes(publication_period, value)) +
+  geom_point(size = 0.3) + 
+  geom_line(data = data.trend, aes(x = publication_period, 
+                                   y = scaled, group = metric, 
+                                   color = trend),
+            linewidth = 0.5) +  
+  scale_color_manual(values = c("Increase" = "red", "Decrease" = "darkgreen", 
+                                "Unstable" = "orange"), 
+                     name = "Uncertainty") +
   scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
   theme_AP() +
   labs(x = "", y = bquote("Km"^3), linetype = NULL) +
@@ -951,7 +975,8 @@ results <- lapply(metrics, function(m)
     .[, calculate_uncertainty_fun(data = .SD, metric = m), .(publication_period, period_midpoint)] %>%
     .[order(publication_period)] %>%
     .[!V1 == 0] %>%
-    .[, trend:= lapply(.SD, check_order_fun), .SDcols = "V1"]
+    .[, trend:= lapply(.SD, check_order_fun), .SDcols = "V1"] %>%
+    .[, publication_period:= gsub("–", "-", publication_period)]
 )
 
 
@@ -965,6 +990,7 @@ data.trend <- lapply(results, function(x)
 
 p2 <- tmp %>%
   .[!is.na(publication_period)] %>%
+  .[, publication_period:= gsub("–", "-", publication_period)] %>%
   ggplot(., aes(publication_period, value)) +
   geom_point(size = 0.3) + 
   geom_line(data = data.trend, aes(x = publication_period, 
@@ -972,7 +998,7 @@ p2 <- tmp %>%
                                    group = metric, lty = metric),
             linewidth = 0.5) +  
   scale_color_manual(values = c("Increase" = "red", "Decrease" = "darkgreen", 
-                                "Random" = "orange")) +
+                                "Unstable" = "orange")) +
   guides(color = "none") +
   labs(x = "", y = bquote("Km"^3), linetype = NULL) +
   scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
@@ -980,13 +1006,66 @@ p2 <- tmp %>%
   theme(axis.text.x = element_text(size = 6.3), 
         axis.text.y = element_text(size = 6.3),
         axis.title.y = element_text(size = 6.5),
-        plot.margin = unit(c(0.05, 0.05, 0, 0.05), "cm")) + 
+        plot.margin = unit(c(0.05, 0.05, 0, 0.05), "cm"), 
+        legend.position = "top") + 
   annotate("text", x = 0.1 + 0.5, y = max(tmp$value), 
            label = unique(tmp$target_year), hjust = 0, vjust = 1, 
            size = 2)
 
+# plot trends based on metrics 3 -----------------------------------------------
 
-plot_grid(p1, p2, ncol = 2, labels = "auto")
+row.id <- 40
+
+final.dt[row %in% seq(row.id, nrow(forking_paths), 60)]
+tmp <-  data.dt[row == row.id] %>%
+  merge(., final.dt, by = "row")
+metrics <- c("range", "var", "iqr")
+
+results <- lapply(metrics, function(m) 
+  tmp %>%
+    .[, calculate_uncertainty_fun(data = .SD, metric = m), .(publication_period, period_midpoint)] %>%
+    .[order(publication_period)] %>%
+    .[!V1 == 0] %>%
+    .[, trend:= lapply(.SD, check_order_fun), .SDcols = "V1"] %>%
+    .[, publication_period:= gsub("–", "-", publication_period)]
+)
+
+
+names(results) <- metrics
+
+data.trend <- lapply(results, function(x) 
+  x[, scaled:= scale_to_range_fun(data = .SD, column = "V1", ref_data = tmp, 
+                                  ref_column = "value")]) %>%
+  lapply(., data.table) %>%
+  rbindlist(., idcol = "metric") 
+
+p3 <- tmp %>%
+  .[!is.na(publication_period)] %>%
+  .[, publication_period:= gsub("–", "-", publication_period)] %>%
+  ggplot(., aes(publication_period, value)) +
+  geom_point(size = 0.3) + 
+  geom_line(data = data.trend, aes(x = publication_period, 
+                                   y = scaled, color = trend, 
+                                   group = metric, lty = metric),
+            linewidth = 0.5) +  
+  scale_color_manual(values = c("Increase" = "red", "Decrease" = "darkgreen", 
+                                "Unstable" = "orange")) +
+  guides(color = "none") +
+  labs(x = "", y = bquote("Km"^3), linetype = NULL) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  theme_AP() +
+  theme(axis.text.x = element_text(size = 6.3), 
+        axis.text.y = element_text(size = 6.3),
+        axis.title.y = element_text(size = 6.5),
+        plot.margin = unit(c(0.05, 0.05, 0, 0.05), "cm"), 
+        legend.position = "top") + 
+  annotate("text", x = 0.1 + 0.5, y = max(tmp$value), 
+           label = unique(tmp$target_year), hjust = 0, vjust = 1, 
+           size = 2)
+
+da <- get_legend_fun(p.withoutline + theme(legend.position = "top"))
+di <- plot_grid(p1 + guides(color = "none"), p2,p3, ncol = 3, labels = "auto")
+plot_grid(da, di, rel_heights = c(0.1, 0.9), ncol = 1)
 ```
 \newpage
 

@@ -103,7 +103,7 @@ check_order_fun <- function(data) {
     
   } else {
     
-    return("Random")
+    return("Unstable")
   }
 }
 
@@ -182,18 +182,19 @@ forking_paths_fun <- function(dt, target_year, interval, metric,
   
   # Draw plots for each simulation ---------------------------------------------
   
-  plot <- ggplot(dt, aes(period_midpoint, uncertainty)) +
+  plot <- dt[, publication_period:= gsub("–", "-", publication_period)] %>%
+    ggplot(., aes(publication_period, uncertainty)) +
     geom_point(color = "red") +
-    geom_line(color = "red") +
+    geom_line(color = "red", group = 1) +
     labs(y = metric, x = "") +
     scale_y_continuous(breaks = breaks_pretty(n = 2)) +
-    scale_x_continuous(breaks = breaks_pretty(n = 2)) +
+    scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
     theme_AP() +
-    theme(axis.text.x = element_text(size = 6.3), 
+    theme(axis.text.x = element_text(size = 4.5), 
           axis.text.y = element_text(size = 6.3),
           axis.title.y = element_text(size = 6.5),
           plot.margin = unit(c(0.05, 0.05, 0, 0.05), "cm")) + 
-    annotate("text", x = min(dt$period_midpoint) + 0.5, y = max(dt$uncertainty), 
+    annotate("text", x = 0.1 + 0.5, y = max(dt$uncertainty), 
              label = target_year_original, hjust = 0, vjust = 1, 
              size = 2)
   

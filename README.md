@@ -3,24 +3,25 @@
 
 # Uncertainty in global irrigation water use persists after 50 years of research
 
-[Arnald Puy](https://www.arnaldpuy.com/), Carmen Aguiló, Seth N. Linga, Naomi Clarke, Nanxin Wei
+[Arnald Puy](https://www.arnaldpuy.com/), Carmen Aguiló, Seth N. Linga, Naomi Clarke
 
-This study compiles c. 1,300 irrigation water withdrawal estimates (1990–2100) from 
-literature published between 1970 and 2024 and analyzes the uncertainty spread to 
-determine whether it has increased or decreased over time.
+This study compiles 1408 global irrigation water withdrawal estimates (1990–2100) 
+from literature published between 1974 and 2025 and analyzes the uncertainty spread 
+to determine whether it has increased or decreased over time.
 
 ## Abstract
 
-*In the last decades, efforts to estimate global irrigation water withdrawals have 
-intensified to better quantify human impacts on the water cycle. Through a computational 
-multiverse analysis of c. 1,300 data points from 55 studies published over a 50 year-span 
-(1974–2025), we find that these efforts have not led to more precise estimates, but to 
-uncertainty evolving randomly through time. Evidence for research reducing uncertainty 
-is just as strong as for research increasing it, with perceived trends fully depending 
-on the methodology used to analyze the data. Our findings suggest that advancing our 
-knowledge of the global impact of irrigation requires not more estimates, but deeper 
-insights into how uncertainties and methodological decisions shape our understanding
-of irrigation water use.*
+*For fifty years, refining models and datasets has been central to reducing 
+uncertainties in the quantification of global irrigation water use. However, 
+whether these efforts have delivered remains unclear. Here we compile 1,408 
+global irrigation water withdrawal estimates from 65 studies (1974-2025) and 
+examine them through 320 different possible analytical pipelines to ensure 
+robustness of results. Our analysis reveals strong evidence that, rather than 
+reducing uncertainties, research has actually amplified them or made them 
+unstable. Only 20\% of analytical pathways suggest a decline in uncertainty 
+over time, dropping to 10\% when excluding projections for 2100. Our findings 
+suggest that embracing uncertainty may be a better strategy than chasing 
+precision to improve our understanding of global irrigation water use.*
 
 ## Replication
 

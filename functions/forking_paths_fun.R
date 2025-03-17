@@ -183,6 +183,7 @@ forking_paths_fun <- function(dt, target_year, interval, metric,
   # Draw plots for each simulation ---------------------------------------------
   
   plot <- dt[, publication_period:= gsub("–", "-", publication_period)] %>%
+    .[, publication_period := gsub("2029$", "2025", publication_period)] %>%
     ggplot(., aes(publication_period, uncertainty)) +
     geom_point(color = "red") +
     geom_line(color = "red", group = 1) +

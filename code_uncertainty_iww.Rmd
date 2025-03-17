@@ -82,7 +82,7 @@ selected.palette <- "Darjeeling1"
 
 ```{r source_functions, warning=FALSE, message=FALSE, results="hide"}
 
-# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ###################################
+# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ##################################@
 
 # Source all .R files in the "functions" folder --------------------------------
 
@@ -600,6 +600,19 @@ final.dt %>%
 
 final.dt <- final.dt[!trend == "single point"]
 
+# Calculate how many forking paths lead to different results just
+# by changing the metric (all the rest fixed) ----------------------------------
+
+final.dt %>%
+  .[, .(target_year, target_year_interval, interval, 
+        rolling_window_factor, metric, trend)] %>%
+  .[order(target_year, target_year_interval, interval, rolling_window_factor)] %>%
+  split(., ceiling(seq_len(nrow(.)) / length(metrics))) %>%
+  rbindlist(., idcol = "group") %>%
+  .[, .(unique_trend_count = uniqueN(trend)), group] %>%
+  .[, .N, unique_trend_count] %>%
+  .[order(unique_trend_count)]
+
 # Simulations that did not lead to a reduction in uncertainty ------------------
 
 final.dt %>%
@@ -887,8 +900,9 @@ plot_grid(left, plot.sa.facet, ncol = 2, rel_widths = c(0.67, 0.33),
 
 data.dt <- lapply(trend, function(x) x[["data"]]) %>%
   rbindlist(., idcol = "row") %>%
-  .[order(publication_period)]
-
+  .[order(publication_period)] %>%
+  .[publication_period == "2020-2029", publication_period:= "2020-2025"] 
+  
 # Plot trends based on metric 1 ------------------------------------------------
 
 row.id <- 4
@@ -904,7 +918,8 @@ results <- lapply(metrics, function(m)
       .[order(publication_period)] %>%
       .[!V1 == 0] %>%
      .[, trend:= lapply(.SD, check_order_fun), .SDcols = "V1"] %>%
-      .[, publication_period:= gsub("–", "-", publication_period)]
+      .[, publication_period:= gsub("–", "-", publication_period)] %>%
+     .[publication_period == "2020-2029", publication_period:= "2020-2025"] 
   )
 
 names(results) <- metrics
@@ -918,6 +933,7 @@ data.trend <- lapply(results, function(x)
 p1 <- tmp %>%
   .[!is.na(publication_period)] %>%
   .[, publication_period:= gsub("–", "-", publication_period)] %>%
+  .[publication_period == "2020-2029", publication_period:= "2020-2025"] %>%
   ggplot(., aes(publication_period, value)) +
   geom_point(size = 0.3) + 
   geom_line(data = data.trend, aes(x = publication_period, 
@@ -976,7 +992,8 @@ results <- lapply(metrics, function(m)
     .[order(publication_period)] %>%
     .[!V1 == 0] %>%
     .[, trend:= lapply(.SD, check_order_fun), .SDcols = "V1"] %>%
-    .[, publication_period:= gsub("–", "-", publication_period)]
+    .[, publication_period:= gsub("–", "-", publication_period)] %>%
+    .[publication_period == "2020-2029", publication_period:= "2020-2025"] 
 )
 
 
@@ -991,6 +1008,7 @@ data.trend <- lapply(results, function(x)
 p2 <- tmp %>%
   .[!is.na(publication_period)] %>%
   .[, publication_period:= gsub("–", "-", publication_period)] %>%
+  .[publication_period == "2020-2029", publication_period:= "2020-2025"] %>%
   ggplot(., aes(publication_period, value)) +
   geom_point(size = 0.3) + 
   geom_line(data = data.trend, aes(x = publication_period, 
@@ -1000,7 +1018,7 @@ p2 <- tmp %>%
   scale_color_manual(values = c("Increase" = "red", "Decrease" = "darkgreen", 
                                 "Unstable" = "orange")) +
   guides(color = "none") +
-  labs(x = "", y = bquote("Km"^3), linetype = NULL) +
+  labs(x = "", y = "", linetype = NULL) +
   scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
   theme_AP() +
   theme(axis.text.x = element_text(size = 6.3), 
@@ -1027,7 +1045,8 @@ results <- lapply(metrics, function(m)
     .[order(publication_period)] %>%
     .[!V1 == 0] %>%
     .[, trend:= lapply(.SD, check_order_fun), .SDcols = "V1"] %>%
-    .[, publication_period:= gsub("–", "-", publication_period)]
+    .[, publication_period:= gsub("–", "-", publication_period)] %>%
+    .[publication_period == "2020-2029", publication_period:= "2020-2025"]
 )
 
 
@@ -1038,10 +1057,12 @@ data.trend <- lapply(results, function(x)
                                   ref_column = "value")]) %>%
   lapply(., data.table) %>%
   rbindlist(., idcol = "metric") 
+  
 
 p3 <- tmp %>%
   .[!is.na(publication_period)] %>%
   .[, publication_period:= gsub("–", "-", publication_period)] %>%
+  .[publication_period == "2020-2029", publication_period:= "2020-2025"] %>%
   ggplot(., aes(publication_period, value)) +
   geom_point(size = 0.3) + 
   geom_line(data = data.trend, aes(x = publication_period, 
@@ -1051,7 +1072,7 @@ p3 <- tmp %>%
   scale_color_manual(values = c("Increase" = "red", "Decrease" = "darkgreen", 
                                 "Unstable" = "orange")) +
   guides(color = "none") +
-  labs(x = "", y = bquote("Km"^3), linetype = NULL) +
+  labs(x = "", y = "", linetype = NULL) +
   scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
   theme_AP() +
   theme(axis.text.x = element_text(size = 6.3), 
@@ -1067,6 +1088,7 @@ da <- get_legend_fun(p.withoutline + theme(legend.position = "top"))
 di <- plot_grid(p1 + guides(color = "none"), p2,p3, ncol = 3, labels = "auto")
 plot_grid(da, di, rel_heights = c(0.1, 0.9), ncol = 1)
 ```
+
 \newpage
 
 # Session information

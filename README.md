@@ -5,7 +5,7 @@
 
 [Arnald Puy](https://www.arnaldpuy.com/), Carmen Aguiló, Seth N. Linga, Naomi Clarke
 
-This study compiles 1408 global irrigation water withdrawal estimates (1990–2100) 
+This study compiles 1,624 global irrigation water withdrawal estimates (1990–2100) 
 from literature published between 1974 and 2025 and analyzes the uncertainty spread 
 to determine whether it has increased or decreased over time.
 
@@ -13,7 +13,7 @@ to determine whether it has increased or decreased over time.
 
 *For fifty years, refining models and datasets has been central to reducing 
 uncertainties in the quantification of global irrigation water use. However, 
-whether these efforts have delivered remains unclear. Here we compile 1,408 
+whether these efforts have delivered remains unclear. Here we compile 1,624 
 global irrigation water withdrawal estimates from 65 studies (1974-2025) and 
 examine them through 320 different possible analytical pipelines to ensure 
 robustness of results. Our analysis reveals strong evidence that, rather than 

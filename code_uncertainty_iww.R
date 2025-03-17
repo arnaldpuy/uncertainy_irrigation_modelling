@@ -60,7 +60,7 @@ lapply(r_functions, source)
 
 # NAOMI DATASET ################################################################
 
-references.projected <- data.table(read.xlsx("./data/references_projection.xlsx")) %>%
+references.projected <- data.table(read.xlsx("./data/references_projection2.xlsx")) %>%
   .[, focus:= "projected"]
 
 references.current <- data.table(read.xlsx("./data/references_current.xlsx")) %>%

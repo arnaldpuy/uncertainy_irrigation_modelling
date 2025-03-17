@@ -262,6 +262,20 @@ b <- isimip.future.dt[, sum(V1, na.rm = TRUE), .(year, Continent, model, climate
 plot_grid(a, b, ncol = 1, labels = "auto")
 
 
+isimip.dt <- fread("isimip.dt.csv")
+
+years.selected <- seq(1975, 2010, 5)
+isimip.dt[year %in% years.selected] %>%
+  .[, sum(V1), .(model, year, climate, social)] %>%
+  .[social == "varsoc"]
+
+
+years.selected.future <- c(seq(2020, 2090, 10), 2099)
+isimip.future.dt[year %in% years.selected.future] %>%
+  .[, sum(V1), .(model, year, climate,forcing, scenario, socio.conditions)] %>%
+  .[, climatic:= paste(climate, forcing, scenario, socio.conditions, sep = "_")] %>%
+  .[, .(model, climatic, V1, year)]
+
 ## ----anova_isimip, dependson=c("arrange_isimip_data", "arrange_isimip_dt_future")--------------------------
 
 # ANOVA ##########################################################################
@@ -274,7 +288,8 @@ isimip.full <- isimip.dt[social == "varsoc"][, context:= "historic"] %>%
 
 isimip.anova <- isimip.full[, .(estimation = sum(V1)), 
                             .(Continent, climate, context, forcing, 
-                              scenario, socio.conditions, model, year)]
+                              scenario, socio.conditions, model, year)] %>%
+  
 
 # ARRANGE DATA #################################################################
 

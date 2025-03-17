@@ -82,7 +82,7 @@ selected.palette <- "Darjeeling1"
 
 ```{r source_functions, warning=FALSE, message=FALSE, results="hide"}
 
-# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ##################################
+# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ###################################
 
 # Source all .R files in the "functions" folder --------------------------------
 
@@ -508,7 +508,7 @@ plot_grid(one.path, all.paths, ncol = 2, labels = c("a", ""))
 
 ```{r forking_paths, dependson=c("naomi_data", "naomi_features")}
 
-# DEFINE THE UNCERTAINTY SPACE #################################################
+# DEFINE THE UNCERTAINTY SPACE ##################################################
 
 # Target year ------------------------------------------------------------------
 

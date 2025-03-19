@@ -31,9 +31,9 @@ We provide all the functions needed to replicate our workflow in the ``functions
 
 #### Generated data
 
-The ''data'' folder contains the data and files produced in this study. The file named
-''current'' compiles studies whose water estimates are either historical or current.
-The file named ```projected'' includes studies with water-related variables projected 
+The ``data'' folder contains the data and files produced in this study. The file named
+``current'' compiles studies whose water estimates are either historical or current.
+The file named ``projected'' includes studies with water-related variables projected 
 into the future.
 
 * `references_current.xlsx`   
@@ -46,6 +46,12 @@ links and repositories:
 
 * [ISI-MIP](https://www.isimip.org/)
 * [Khan et al 2023](https://www.nature.com/articles/s41597-023-02086-2)
+
+### Functions
+
+The ``functions'' folder contains all the custom functions coded for the analysis.
+They are all sourced from the `.R`, `.pdf` and `.Rmd` files and therefore the 
+user of the code does not need to source them separately.
 
 ### Code
 

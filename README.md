@@ -25,15 +25,15 @@ precision to improve our understanding of global irrigation water use.*
 
 ## Replication
 
-We provide all the functions needed to replicate our workflow in the ``functions'' folder.
+We provide all the functions needed to replicate our workflow in the "functions" folder.
 
 ### Data
 
 #### Generated data
 
-The ``data'' folder contains the data and files produced in this study. The file named
-``current'' compiles studies whose water estimates are either historical or current.
-The file named ``projected'' includes studies with water-related variables projected 
+The "data" folder contains the data and files produced in this study. The file named
+`current` compiles studies whose water estimates are either historical or current.
+The file named `projected` includes studies with water-related variables projected 
 into the future.
 
 * `references_current.xlsx`   
@@ -49,7 +49,7 @@ links and repositories:
 
 ### Functions
 
-The ``functions'' folder contains all the custom functions coded for the analysis.
+The "functions" folder contains all the custom functions coded for the analysis.
 They are all sourced from the `.R`, `.pdf` and `.Rmd` files and therefore the 
 user of the code does not need to source them separately.
 
@@ -57,6 +57,6 @@ user of the code does not need to source them separately.
 
 We offer the code in `.R`, `.pdf` and `.Rmd`. Our entire workflow can be run and the 
 results replicated from either of these files. The user must run the code from the 
-same folder where the files in the primary data section are stored for a successful 
+same folder where the files in the generated data section are stored for a successful 
 compilation.
 

@@ -82,7 +82,7 @@ selected.palette <- "Darjeeling1"
 
 ```{r source_functions, warning=FALSE, message=FALSE, results="hide"}
 
-# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ##################################@
+# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ##################################
 
 # Source all .R files in the "functions" folder --------------------------------
 
@@ -97,7 +97,7 @@ lapply(r_functions, source)
 
 ```{r naomi_data}
 
-# NAOMI DATASET ################################################################
+# NAOMI DATASET ###############################################################
 
 references.projected <- data.table(read.xlsx("./data/references_projection.xlsx")) %>%
   .[, focus:= "projected"]
@@ -508,7 +508,7 @@ plot_grid(one.path, all.paths, ncol = 2, labels = c("a", ""))
 
 ```{r forking_paths, dependson=c("naomi_data", "naomi_features")}
 
-# DEFINE THE UNCERTAINTY SPACE ##################################################
+# DEFINE THE UNCERTAINTY SPACE #################################################
 
 # Target year ------------------------------------------------------------------
 
@@ -630,19 +630,44 @@ plots.dt <- lapply(trend, function(x) x[["plot"]])
 
 # Increasing trends ------------------------------------------------------------
 
-plots.increasing <- plot_grid(plots.dt[[7]], plots.dt[[11]], plots.dt[[278]], 
-                              plots.dt[[226]], ncol = 1)
+plots.increasing <- plot_grid(plots.dt[[7]] + 
+                                geom_line(color = "red", group = 1), 
+                              plots.dt[[11]] + 
+                                geom_line(color = "red", group = 1), 
+                              plots.dt[[278]] +
+                                geom_line(color = "red", group = 1), 
+                              plots.dt[[226]] + 
+                                geom_line(color = "red", group = 1), ncol = 1)
 
 # Decreasing trend ------------------------------------------------------------
 
-plots.decreasing <- plot_grid(plots.dt[[4]], plots.dt[[69]], plots.dt[[100]], 
-                              plots.dt[[142]], ncol = 1)
+plots.decreasing <- plot_grid(plots.dt[[4]] + 
+                                geom_line(color = "darkgreen", group = 1) +
+                                geom_point(color = "darkgreen"), 
+                              plots.dt[[69]] + 
+                                geom_line(color = "darkgreen", group = 1) +
+                                geom_point(color = "darkgreen"), 
+                              plots.dt[[100]] + 
+                                geom_line(color = "darkgreen", group = 1) +
+                                geom_point(color = "darkgreen"), 
+                              plots.dt[[142]] + 
+                                geom_line(color = "darkgreen", group = 1) +
+                                geom_point(color = "darkgreen"), ncol = 1)
 
 # Random trend -----------------------------------------------------------------
 
-plots.random <- plot_grid(plots.dt[[1]], plots.dt[[3]], plots.dt[[33]], 
-                          plots.dt[[340]], ncol = 1)
-
+plots.random <- plot_grid(plots.dt[[1]] + 
+                            geom_line(color = "orange", group = 1) +
+                            geom_point(color = "orange"), 
+                          plots.dt[[3]] + 
+                            geom_line(color = "orange", group = 1) +
+                            geom_point(color = "orange"), 
+                          plots.dt[[33]] + 
+                            geom_line(color = "orange", group = 1) +
+                            geom_point(color = "orange"), 
+                          plots.dt[[340]] + 
+                            geom_line(color = "orange", group = 1) +
+                            geom_point(color = "orange"), ncol = 1)
 # Merge ------------------------------------------------------------------------
 
 plots.examples.trends <- plot_grid(plots.increasing, plots.decreasing, 
@@ -761,23 +786,23 @@ names(supp.labs) <- paste("probability_", supp.labs, sep = "")
 
 # Plot -------------------------------------------------------------------------
 
-plot.predict <- plot_predict_interaction(rf_model, df, "target_year", "rolling_window_factor") + 
+plot.predict1 <- plot_predict_interaction(rf_model, df, "interval", "rolling_window_factor") + 
   theme_AP() +
   scale_fill_gradientn(colours = c("white", wes_palette("Zissou1")), 
                        name = "probability", 
                        breaks = c(0, 0.5, 1)) +
   theme(plot.title = element_blank()) +
-  labs(x = "Target year", y = "Rolling window factor") +
+  labs(x = "Interval", y = "Rolling window factor") +
   scale_x_continuous(breaks = pretty_breaks(n = 3)) +
   facet_grid(~variable,  labeller = labeller(variable = supp.labs)) + 
   theme(legend.position = "none", 
         axis.text.x = element_text(size = 6.1))
 
-plot.predict
+plot.predict1
 
 # Now on different combinations
 
-plot_predict_interaction(rf_model, df, "target_year", "interval") + 
+plot.predict2 <- plot_predict_interaction(rf_model, df, "target_year", "interval") + 
   theme_AP() +
   scale_fill_gradientn(colours = c("white", wes_palette("Zissou1")), 
                        name = "probability", 
@@ -791,16 +816,21 @@ plot_predict_interaction(rf_model, df, "target_year", "interval") +
 
 # MERGE RANDOM FOREST PLOTS ####################################################
 
-legend <- get_legend_fun(plot.predict + theme(legend.position = "top"))
-bottom <- plot_grid(plot.multiway, plot.predict, ncol = 2, rel_widths = c(0.36, 0.64),
+legend <- get_legend_fun(plot.predict1 + theme(legend.position = "top"))
+bottom <- plot_grid(plot.multiway, plot.predict1, ncol = 2, rel_widths = c(0.36, 0.64),
                     labels = "auto")
 plot_grid(legend, bottom, rel_heights = c(0.13, 0.87), ncol = 1)
 ```
 
+```{r plot_multi, dependson="plot_random_forest", fig.height=3.5, fig.width=4.5}
+
+bottom <- plot_grid(plot.predict1, plot.predict2, ncol = 1, labels = "auto")
+plot_grid(legend, bottom, rel_heights = c(0.1, 0.9), ncol = 1)
+```
 
 ```{r merge_rf, fig.height=2, fig.width=4.5}
-
-plotp1 <- plot_grid(legend, plot.predict, ncol = 1, rel_heights = c(0.15, 0.85))
+##
+plotp1 <- plot_grid(legend, plot.predict2, ncol = 1, rel_heights = c(0.15, 0.85))
 plotp1
 ```
 

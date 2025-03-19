@@ -1,8 +1,8 @@
-## ----setup, include=FALSE-----------------------------------------------------------
+## ----setup, include=FALSE-------------------------------------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE, dev = "pdf", cache = TRUE)
 
 
-## ----warning=FALSE, message=FALSE---------------------------------------------------
+## ---- warning=FALSE, message=FALSE----------------------------------------------------------------------
 
 #   PRELIMINARY FUNCTIONS ######################################################
 
@@ -45,9 +45,9 @@ theme_AP <- function() {
 selected.palette <- "Darjeeling1"
 
 
-## ----source_functions, warning=FALSE, message=FALSE, results="hide"-----------------
+## ----source_functions, warning=FALSE, message=FALSE, results="hide"-------------------------------------
 
-# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ##################################@
+# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ##################################
 
 # Source all .R files in the "functions" folder --------------------------------
 
@@ -56,9 +56,9 @@ lapply(r_functions, source)
 
 
 
-## ----naomi_data---------------------------------------------------------------------
+## ----naomi_data-----------------------------------------------------------------------------------------
 
-# NAOMI DATASET ################################################################
+# NAOMI DATASET ###############################################################
 
 references.projected <- data.table(read.xlsx("./data/references_projection.xlsx")) %>%
   .[, focus:= "projected"]
@@ -97,7 +97,7 @@ references.full.dt[, publication.date:= str_extract(author, "\\d{4}")] %>%
   .[, publication.date:= as.numeric(publication.date)]
 
 
-## ----naomi_features, dependson="naomi_data", fig.height=1.8, fig.width=2------------
+## ----naomi_features, dependson="naomi_data", fig.height=1.8, fig.width=2--------------------------------
 
 # FEATURES OF THE DATASET ######################################################
 
@@ -159,7 +159,7 @@ cumulative.iww <- references.full.dt[, .(title, publication.date, variable)] %>%
 cumulative.iww
 
 
-## ----histogram_data_points, dependson="naomi_data", fig.height=2, fig.width=2-------
+## ----histogram_data_points, dependson="naomi_data", fig.height=2, fig.width=2---------------------------
 
 # DISTRIBUTION OF DATA POINTS THROUGH YEARS @####################################
 
@@ -173,7 +173,7 @@ plot.bar <- references.full.dt[variable == "iww" & region == "global", .N, estim
 plot.bar
 
 
-## ----plot_naomi, dependson="naomi_data", fig.height=3.5, fig.width=6----------------
+## ----plot_naomi, dependson="naomi_data", fig.height=3.5, fig.width=6------------------------------------
 
 # PLOT ALL ESTIMATIONS ##########################################################
 
@@ -196,37 +196,37 @@ plot.iww <- references.full.dt[variable == "iww" & region == "global"] %>%
 plot.iww
 
 
-## ----plot_animation, dependson="plot_naomi", eval=FALSE, echo=FALSE-----------------
-# 
-# animated_plot <- references.full.dt[variable == "iww" & region == "global"] %>%
-#   .[, .(author, study, estimation.year, value, publication.date)] %>%
-#   na.omit() %>%
-#   ggplot(., aes(estimation.year, value, color = author, group = study)) +
-#   geom_point(size = 0.5) +
-#   labs(x = "Estimation year", y = bquote("Km"^3)) +
-#   scale_color_discrete(name = "") +
-#   geom_line(alpha = def.alpha) +
-#   theme_AP() +
-#   guides(color = guide_legend(ncol = 2)) +
-#   theme(legend.text = element_text(size = 5.5),
-#         legend.key.width = unit(0.25, "cm"),
-#         legend.key.height = unit(0.25, "cm")) +
-#   ggtitle("Publication Year: {frame_along}") +
-#   transition_reveal(publication.date)
-# 
-# animation <- animate(animated_plot,
-#                      nframes = 200,
-#                      fps = 10,
-#                      duration = 20,
-#                      renderer = magick_renderer())
-# 
-# animation <- animate(animated_plot, nframes=70, width = 800, height = 600,
-#                      res = 150, renderer = magick_renderer())
-# 
-# image_write_gif(animation, 'animation.gif')
+## ----plot_animation, dependson="plot_naomi", eval=FALSE, echo=FALSE-------------------------------------
+## 
+## animated_plot <- references.full.dt[variable == "iww" & region == "global"] %>%
+##   .[, .(author, study, estimation.year, value, publication.date)] %>%
+##   na.omit() %>%
+##   ggplot(., aes(estimation.year, value, color = author, group = study)) +
+##   geom_point(size = 0.5) +
+##   labs(x = "Estimation year", y = bquote("Km"^3)) +
+##   scale_color_discrete(name = "") +
+##   geom_line(alpha = def.alpha) +
+##   theme_AP() +
+##   guides(color = guide_legend(ncol = 2)) +
+##   theme(legend.text = element_text(size = 5.5),
+##         legend.key.width = unit(0.25, "cm"),
+##         legend.key.height = unit(0.25, "cm")) +
+##   ggtitle("Publication Year: {frame_along}") +
+##   transition_reveal(publication.date)
+## 
+## animation <- animate(animated_plot,
+##                      nframes = 200,
+##                      fps = 10,
+##                      duration = 20,
+##                      renderer = magick_renderer())
+## 
+## animation <- animate(animated_plot, nframes=70, width = 800, height = 600,
+##                      res = 150, renderer = magick_renderer())
+## 
+## image_write_gif(animation, 'animation.gif')
 
 
-## ----plot.models, dependson="naomi_features", fig.height=4, fig.width=3-------------
+## ----plot.models, dependson="naomi_features", fig.height=4, fig.width=3---------------------------------
  
 # PLOT NUMBER OF UNIQUE STUDIES PER MODEL ######################################
 
@@ -247,7 +247,7 @@ plot.models <- references.full.dt[variable == "iww" & region == "global"] %>%
 plot.models
 
 
-## ----plot_examples, fig.height=3, fig.width=1.5-------------------------------------
+## ----plot_examples, fig.height=3, fig.width=1.5---------------------------------------------------------
 
 # PLOT EXAMPLES TO ILLUSTRATE APPROACH #########################################
 
@@ -315,7 +315,7 @@ plot.examples.trends.data <- plot_grid(p1, p2, p3, ncol = 1, labels = c("e", "",
 plot.examples.trends.data
 
 
-## ----plotting_forks-----------------------------------------------------------------
+## ----plotting_forks-------------------------------------------------------------------------------------
 
 # GRAPHICAL REPRESENTATION OF THE GARDEN OF FORKING PATHS ######################
 
@@ -382,14 +382,14 @@ one.path <- ggraph(tree, layout = "dendrogram") +
 one.path
 
 
-## ----plot_forking_paths, dependson="plotting_forks", fig.height=1.5, fig.width=3----
+## ----plot_forking_paths, dependson="plotting_forks", fig.height=1.5, fig.width=3------------------------
 
 # MERGE FORKING PATHS ##########################################################
 
 plot_grid(one.path, all.paths, ncol = 2, labels = c("a", ""))
 
 
-## ----plotting_forks2----------------------------------------------------------------
+## ----plotting_forks2------------------------------------------------------------------------------------
 
 # GRAPHICAL REPRESENTATION OF THE GARDEN OF FORKING PATHS #######################
 
@@ -456,16 +456,16 @@ one.path2 <- ggraph(tree, layout = "dendrogram") +
 one.path2
 
 
-## ----plot_forking_paths2, dependson="plotting_forks2", fig.height=1.5, fig.width=3----
+## ----plot_forking_paths2, dependson="plotting_forks2", fig.height=1.5, fig.width=3----------------------
 
 # MERGE FORKING PATHS ##########################################################
 
 plot_grid(one.path, all.paths, ncol = 2, labels = c("a", ""))
 
 
-## ----forking_paths, dependson=c("naomi_data", "naomi_features")---------------------
+## ----forking_paths, dependson=c("naomi_data", "naomi_features")-----------------------------------------
 
-# DEFINE THE UNCERTAINTY SPACE ##################################################
+# DEFINE THE UNCERTAINTY SPACE #################################################
 
 # Target year ------------------------------------------------------------------
 
@@ -521,7 +521,7 @@ for (i in 1:nrow(forking_paths)) {
 }
 
 
-## ----naomi_arrange, dependson="forking_paths"---------------------------------------
+## ----naomi_arrange, dependson="forking_paths"-----------------------------------------------------------
 
 # ARRANGE DATA #################################################################
 
@@ -579,7 +579,7 @@ final.dt %>%
   .[, sum(fraction)]
 
 
-## ----examples_plots, dependson="forking_paths", fig.height=3.5, fig.width=5.5, warning=FALSE----
+## ----examples_plots, dependson="forking_paths", fig.height=3.5, fig.width=5.5, warning=FALSE------------
 
 # PLOTS FORKING PATHS EXAMPLES ##################################################
 
@@ -587,19 +587,44 @@ plots.dt <- lapply(trend, function(x) x[["plot"]])
 
 # Increasing trends ------------------------------------------------------------
 
-plots.increasing <- plot_grid(plots.dt[[7]], plots.dt[[11]], plots.dt[[278]], 
-                              plots.dt[[226]], ncol = 1)
+plots.increasing <- plot_grid(plots.dt[[7]] + 
+                                geom_line(color = "red", group = 1), 
+                              plots.dt[[11]] + 
+                                geom_line(color = "red", group = 1), 
+                              plots.dt[[278]] +
+                                geom_line(color = "red", group = 1), 
+                              plots.dt[[226]] + 
+                                geom_line(color = "red", group = 1), ncol = 1)
 
 # Decreasing trend ------------------------------------------------------------
 
-plots.decreasing <- plot_grid(plots.dt[[4]], plots.dt[[69]], plots.dt[[100]], 
-                              plots.dt[[142]], ncol = 1)
+plots.decreasing <- plot_grid(plots.dt[[4]] + 
+                                geom_line(color = "darkgreen", group = 1) +
+                                geom_point(color = "darkgreen"), 
+                              plots.dt[[69]] + 
+                                geom_line(color = "darkgreen", group = 1) +
+                                geom_point(color = "darkgreen"), 
+                              plots.dt[[100]] + 
+                                geom_line(color = "darkgreen", group = 1) +
+                                geom_point(color = "darkgreen"), 
+                              plots.dt[[142]] + 
+                                geom_line(color = "darkgreen", group = 1) +
+                                geom_point(color = "darkgreen"), ncol = 1)
 
 # Random trend -----------------------------------------------------------------
 
-plots.random <- plot_grid(plots.dt[[1]], plots.dt[[3]], plots.dt[[33]], 
-                          plots.dt[[340]], ncol = 1)
-
+plots.random <- plot_grid(plots.dt[[1]] + 
+                            geom_line(color = "orange", group = 1) +
+                            geom_point(color = "orange"), 
+                          plots.dt[[3]] + 
+                            geom_line(color = "orange", group = 1) +
+                            geom_point(color = "orange"), 
+                          plots.dt[[33]] + 
+                            geom_line(color = "orange", group = 1) +
+                            geom_point(color = "orange"), 
+                          plots.dt[[340]] + 
+                            geom_line(color = "orange", group = 1) +
+                            geom_point(color = "orange"), ncol = 1)
 # Merge ------------------------------------------------------------------------
 
 plots.examples.trends <- plot_grid(plots.increasing, plots.decreasing, 
@@ -629,7 +654,7 @@ plot.fraction <- final.dt[, .(total = .N), trend] %>%
 plot.fraction 
 
 
-## ----random_forest, dependson=c("naomi_arrange", "forking_paths"), fig.width=3.5, fig.height=2----
+## ----random_forest, dependson=c("naomi_arrange", "forking_paths"), fig.width=3.5, fig.height=2----------
 
 # RANDOM FOREST #################################################################
 
@@ -690,7 +715,7 @@ plot.rf <- data.frame(importance(rf_model)) %>%
 plot.rf
 
 
-## ----plot_random_forest, dependson="random_forest", fig.height=2.2, fig.width=5.7----
+## ----plot_random_forest, dependson="random_forest", fig.height=2.2, fig.width=5.7-----------------------
 
 # MULTIWAY IMPORTANCE PLOT ######################################################
 
@@ -716,23 +741,23 @@ names(supp.labs) <- paste("probability_", supp.labs, sep = "")
 
 # Plot -------------------------------------------------------------------------
 
-plot.predict <- plot_predict_interaction(rf_model, df, "target_year", "rolling_window_factor") + 
+plot.predict1 <- plot_predict_interaction(rf_model, df, "interval", "rolling_window_factor") + 
   theme_AP() +
   scale_fill_gradientn(colours = c("white", wes_palette("Zissou1")), 
                        name = "probability", 
                        breaks = c(0, 0.5, 1)) +
   theme(plot.title = element_blank()) +
-  labs(x = "Target year", y = "Rolling window factor") +
+  labs(x = "Interval", y = "Rolling window factor") +
   scale_x_continuous(breaks = pretty_breaks(n = 3)) +
   facet_grid(~variable,  labeller = labeller(variable = supp.labs)) + 
   theme(legend.position = "none", 
         axis.text.x = element_text(size = 6.1))
 
-plot.predict
+plot.predict1
 
 # Now on different combinations
 
-plot_predict_interaction(rf_model, df, "target_year", "interval") + 
+plot.predict2 <- plot_predict_interaction(rf_model, df, "target_year", "interval") + 
   theme_AP() +
   scale_fill_gradientn(colours = c("white", wes_palette("Zissou1")), 
                        name = "probability", 
@@ -746,19 +771,25 @@ plot_predict_interaction(rf_model, df, "target_year", "interval") +
 
 # MERGE RANDOM FOREST PLOTS ####################################################
 
-legend <- get_legend_fun(plot.predict + theme(legend.position = "top"))
-bottom <- plot_grid(plot.multiway, plot.predict, ncol = 2, rel_widths = c(0.36, 0.64),
+legend <- get_legend_fun(plot.predict1 + theme(legend.position = "top"))
+bottom <- plot_grid(plot.multiway, plot.predict1, ncol = 2, rel_widths = c(0.36, 0.64),
                     labels = "auto")
 plot_grid(legend, bottom, rel_heights = c(0.13, 0.87), ncol = 1)
 
 
-## ----merge_rf, fig.height=2, fig.width=4.5------------------------------------------
+## ----plot_multi, dependson="plot_random_forest", fig.height=3.5, fig.width=4.5--------------------------
 
-plotp1 <- plot_grid(legend, plot.predict, ncol = 1, rel_heights = c(0.15, 0.85))
+bottom <- plot_grid(plot.predict1, plot.predict2, ncol = 1, labels = "auto")
+plot_grid(legend, bottom, rel_heights = c(0.1, 0.9), ncol = 1)
+
+
+## ----merge_rf, fig.height=2, fig.width=4.5--------------------------------------------------------------
+##
+plotp1 <- plot_grid(legend, plot.predict2, ncol = 1, rel_heights = c(0.15, 0.85))
 plotp1
 
 
-## ----tree_plot----------------------------------------------------------------------
+## ----tree_plot------------------------------------------------------------------------------------------
 
 library(rpart)
 library(rpart.plot)
@@ -807,7 +838,7 @@ bottom.right <- plot_grid(bottom, plot.examples.trends.data, ncol = 2, rel_width
 plot_grid(plot.iww, bottom.right, ncol = 1, rel_heights = c(0.5, 0.5), labels = c("a", ""))
 
 
-## ----faceted_plot, dependson="naomi_arrange", fig.height=3.6, fig.width=5.5---------
+## ----faceted_plot, dependson="naomi_arrange", fig.height=3.6, fig.width=5.5-----------------------------
 
 # SENSITIVITY ANALYSIS PLOT BY FACET ############################################
 
@@ -1042,7 +1073,7 @@ di <- plot_grid(p1 + guides(color = "none"), p2,p3, ncol = 3, labels = "auto")
 plot_grid(da, di, rel_heights = c(0.1, 0.9), ncol = 1)
 
 
-## ----session_information------------------------------------------------------------
+## ----session_information--------------------------------------------------------------------------------
 
 # SESSION INFORMATION ##########################################################
 

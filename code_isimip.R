@@ -1,8 +1,8 @@
-## ----setup, include=FALSE----------------------------------------------------------------------------------
+## ----setup, include=FALSE--------------------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE, dev = "pdf", cache = TRUE)
 
 
-## ----warning=FALSE, message=FALSE--------------------------------------------------------------------------
+## ----warning=FALSE, message=FALSE------------------------------------------------------
 
 #   PRELIMINARY FUNCTIONS ######################################################
 
@@ -45,7 +45,7 @@ theme_AP <- function() {
 selected.palette <- "Darjeeling1"
 
 
-## ----source_functions, warning=FALSE, message=FALSE, results="hide"----------------------------------------
+## ----source_functions, warning=FALSE, message=FALSE, results="hide"--------------------
 
 # SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ###################################
 
@@ -56,7 +56,7 @@ lapply(r_functions, source)
 
 
 
-## ----isimip_data-------------------------------------------------------------------------------------------
+## ----isimip_data-----------------------------------------------------------------------
 
 # RETRIEVE DATA FROM ISIMIP #####################################################
 
@@ -91,7 +91,7 @@ isimip.hist <- foreach(i = 1:length(files.directory),
 stopCluster(cl)
 
 
-## ----arrange_isimip_data, dependson="isimip_data"----------------------------------------------------------
+## ----arrange_isimip_data, dependson="isimip_data"--------------------------------------
 
 # ARRANGE DATA #################################################################
 
@@ -112,11 +112,13 @@ isimip.dt <- rbindlist(isimip.hist, idcol = "model") %>%
 
 fwrite(isimip.dt, "isimip.dt.csv")
 
+isimip.dt <- fread("isimip.dt.csv")
+
 # Pressoc: constant human impacts in the form of dams and reservoirs
 # varsoc: variable human impacts.
 
 
-## ----plot_isimip_dt_continent, dependson="arrange_isimip_data", fig.height=3.2-----------------------------
+## ----plot_isimip_dt_continent, dependson="arrange_isimip_data", fig.height=3.2---------
 
 # PLOT ISIMIP ###################################################################
 
@@ -135,7 +137,7 @@ isimip.dt[, sum(V1, na.rm = TRUE), .(Continent, model, year, climate, social)] %
   theme(legend.position = "top")
 
 
-## ----plot_isimip_dt_global, dependson="arrange_isimip_data", fig.height=2.2, fig.width=3.7-----------------
+## ----plot_isimip_dt_global, dependson="arrange_isimip_data", fig.height=2.2, fig.width=3.7----
 
 # Global level -----------------------------------------------------------------
 
@@ -148,7 +150,7 @@ isimip.dt[, sum(V1, na.rm = TRUE), .(year, model, climate, social)] %>%
   theme(legend.position = "top")
 
 
-## ----isimip_data_future------------------------------------------------------------------------------------
+## ----isimip_data_future----------------------------------------------------------------
 
 # RETRIEVE PROJECTIONS FROM ISIMIP ##############################################
 
@@ -182,7 +184,7 @@ isimip.future <- foreach(i = 1:length(files.directory.projections),
 stopCluster(cl)
 
 
-## ----arrange_isimip_dt_future, dependson="isimip_data_future"----------------------------------------------
+## ----arrange_isimip_dt_future, dependson="isimip_data_future"--------------------------
 
 # ARRANGE DATA ##################################################################
 
@@ -215,7 +217,7 @@ isimip.future.dt[, c("model", "climate", "forcing", "scenario",
 fwrite(isimip.future.dt, "isimip.future.dt.csv")
 
 
-## ----plot_isimip_dt_future, dependson="arrange_isimip_dt_future"-------------------------------------------
+## ----plot_isimip_dt_future, dependson="arrange_isimip_dt_future"-----------------------
 
 # PLOT ISIMIP ##################################################################
 
@@ -233,7 +235,7 @@ isimip.future.dt[, sum(V1, na.rm = TRUE), .(year, Continent, model, climate, for
   theme(legend.position = "top")
 
 
-## ----plot_isimip_dt_future_merged, dependson="arrange_isimip_dt_future", fig.height=4----------------------
+## ----plot_isimip_dt_future_merged, dependson="arrange_isimip_dt_future", fig.height=4----
 
 # PLOT ISIMIP MERGED ###########################################################
 
@@ -262,21 +264,7 @@ b <- isimip.future.dt[, sum(V1, na.rm = TRUE), .(year, Continent, model, climate
 plot_grid(a, b, ncol = 1, labels = "auto")
 
 
-isimip.dt <- fread("isimip.dt.csv")
-
-years.selected <- seq(1975, 2010, 5)
-isimip.dt[year %in% years.selected] %>%
-  .[, sum(V1), .(model, year, climate, social)] %>%
-  .[social == "varsoc"]
-
-
-years.selected.future <- c(seq(2020, 2090, 10), 2099)
-isimip.future.dt[year %in% years.selected.future] %>%
-  .[, sum(V1), .(model, year, climate,forcing, scenario, socio.conditions)] %>%
-  .[, climatic:= paste(climate, forcing, scenario, socio.conditions, sep = "_")] %>%
-  .[, .(model, climatic, V1, year)]
-
-## ----anova_isimip, dependson=c("arrange_isimip_data", "arrange_isimip_dt_future")--------------------------
+## ----anova_isimip, dependson=c("arrange_isimip_data", "arrange_isimip_dt_future")------
 
 # ANOVA ##########################################################################
 
@@ -287,9 +275,8 @@ isimip.full <- isimip.dt[social == "varsoc"][, context:= "historic"] %>%
   .[, social:= NULL] 
 
 isimip.anova <- isimip.full[, .(estimation = sum(V1)), 
-                            .(Continent, climate, context, forcing, 
-                              scenario, socio.conditions, model, year)] %>%
-  
+                            .(climate, context, forcing, 
+                              scenario, socio.conditions, model, year)]
 
 # ARRANGE DATA #################################################################
 
@@ -325,7 +312,7 @@ for (i in seq_along(vector.simulation)) {
 
 
 
-## ----plot_anova, dependson="anova_isimip", fig.height=3.2, fig.width=6-------------------------------------
+## ----plot_anova, dependson="anova_isimip", fig.height=3.2, fig.width=6-----------------
 
 # PLOT RESULTS ##################################################################
 
@@ -383,7 +370,7 @@ plots.anova <- plot_grid(a, b, ncol = 2, labels = c("b", "c"), rel_widths = c(0.
 plots.anova
 
 
-## ----check_combinations, dependson="anova_isimip", fig.height=2.3, fig.width=5.5---------------------------
+## ----check_combinations, dependson="anova_isimip", fig.height=2.3, fig.width=5.5-------
 
 # COUNT COMBINATIONS OF MODEL AND CLIMATE #######################################
 
@@ -425,7 +412,7 @@ all.tiles <- plot_grid(plot.tile1, plot.tile2, plot.tile3, ncol = 3,
 all.tiles
 
 
-## ----merge_tiles, dependson=c("check_combinations", "plot_anova"), fig.width=6.1, fig.height=5-------------
+## ----merge_tiles, dependson=c("check_combinations", "plot_anova"), fig.width=6.1, fig.height=5----
 
 # MERGE PLOTS ##################################################################
 
@@ -444,7 +431,7 @@ bottom <- plot_grid(all.legends2, plots.anova, ncol = 1, rel_heights = c(0.1, 0.
 plot_grid(top, bottom, ncol = 1, rel_heights = c(0.4, 0.6))
 
 
-## ----khan_data, cache.lazy=FALSE, eval = FALSE-------------------------------------------------------------
+## ----khan_data, cache.lazy=FALSE, eval = FALSE-----------------------------------------
 # 
 # # KHAN ET AL 2023 DATASET ######################################################
 # 
@@ -492,7 +479,7 @@ plot_grid(top, bottom, ncol = 1, rel_heights = c(0.4, 0.6))
 # stopCluster(cl)
 
 
-## ----arrange_khan_data, dependson="khan_data", cache.lazy=FALSE, eval = FALSE------------------------------
+## ----arrange_khan_data, dependson="khan_data", cache.lazy=FALSE, eval = FALSE----------
 # 
 # # ARRANGE DATA #################################################################
 # 
@@ -511,7 +498,7 @@ plot_grid(top, bottom, ncol = 1, rel_heights = c(0.4, 0.6))
 # fwrite(khan.dt.continent, "khan.dt.continent.csv")
 
 
-## ----plot_khan_continental, dependson="arrange_khan_data", fig.height=2.3, fig.width=4, eval=FALSE---------
+## ----plot_khan_continental, dependson="arrange_khan_data", fig.height=2.3, fig.width=4, eval=FALSE----
 # 
 # # PLOT #########################################################################
 # 
@@ -528,7 +515,7 @@ plot_grid(top, bottom, ncol = 1, rel_heights = c(0.4, 0.6))
 # plot.khan.continental
 
 
-## ----plot_khan_global, dependson="arrange_khan_data", fig.height=2.3, fig.width=4, eval = FALSE------------
+## ----plot_khan_global, dependson="arrange_khan_data", fig.height=2.3, fig.width=4, eval = FALSE----
 # 
 # # PLOT #########################################################################
 # 
@@ -554,7 +541,7 @@ plot_grid(top, bottom, ncol = 1, rel_heights = c(0.4, 0.6))
 # 
 
 
-## ----plot_khan_ssp_rcp, dependson="arrange_khan_data", eval = FALSE----------------------------------------
+## ----plot_khan_ssp_rcp, dependson="arrange_khan_data", eval = FALSE--------------------
 # 
 # # PLOT SSPS VS RCPS ############################################################
 # 
@@ -568,7 +555,7 @@ plot_grid(top, bottom, ncol = 1, rel_heights = c(0.4, 0.6))
 # 
 
 
-## ----merge_khan_isimip, dependson="anova_isimip", fig.height=1.7, fig.width=6.5----------------------------
+## ----merge_khan_isimip, dependson="anova_isimip", fig.height=1.7, fig.width=6.5--------
 
 # MERGE KHAN ET AL DATA WITH ISIMIP ############################################
 
@@ -606,9 +593,9 @@ merged.dt[year %in% c(2030, 2040, 2050),
   .[, .(sum_min = sum(min), sum_max = sum(max)), year]
 
 
-## ----session_information-----------------------------------------------------------------------------------
+## ----session_information---------------------------------------------------------------
 
-# SESSION INFORMATION ##########################################################
+# SESSION INFORMATION ###########################################################
 
 sessionInfo()
 

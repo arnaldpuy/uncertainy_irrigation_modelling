@@ -893,6 +893,7 @@ plot.sa.facet <- final.dt %>%
                           "rolling_window_factor", "metric")) %>%
   .[, .N, .(variable, value, trend)] %>%
   .[ , value := gsub("_normalized", "_n", value)] %>%
+  .[variable == "rolling_window_factor", value:= ifelse(value == 1, "0%", "50%")] %>%
   ggplot(., aes(value, N, fill = trend)) +
   scale_fill_manual(values = selected_colors, name = "Uncertainty") +
   geom_bar(stat = "identity", position = position_dodge(0.5)) +

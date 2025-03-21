@@ -1,5 +1,5 @@
 ---
-title: "Uncertainty in global irrigation water use persists after 50 years of research"
+title: "Fifty years of research have deepened uncertainties in global irrigation water use"
 subtitle: "R code of the multiverse analysis"
 author: "Arnald Puy"
 header-includes:

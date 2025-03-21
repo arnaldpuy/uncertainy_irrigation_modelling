@@ -1,7 +1,7 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14710666.svg)](https://doi.org/10.5281/zenodo.14710666)
 
-# Uncertainty in global irrigation water use persists after 50 years of research
+# Fifty years of research have deepened uncertainties in global irrigation water use
 
 [Arnald Puy](https://www.arnaldpuy.com/), Carmen Aguiló, Seth N. Linga, Naomi Clarke
 

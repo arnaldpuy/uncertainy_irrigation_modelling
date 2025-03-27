@@ -97,43 +97,9 @@ lapply(r_functions, source)
 
 ```{r naomi_data}
 
-# NAOMI DATASET ###############################################################
+# LOAD THE DATASET #############################################################
 
-references.projected <- data.table(read.xlsx("./data/references_projection.xlsx")) %>%
-  .[, focus:= "projected"]
-
-references.current <- data.table(read.xlsx("./data/references_current.xlsx")) %>%
-  .[, focus:= "current"]
-
-references.full.dt <- rbind(references.projected, references.current) %>%
-  .[, study:= paste(author, model, climate.scenario, sep = ".")] 
-
-# CLEAN THE DATASET ############################################################
-
-colnames_vector <- c("title", "author", "region")
-
-# Remove leading and trailing spaces -------------------------------------------
-
-references.full.dt[, (colnames_vector):= lapply(.SD, trimws), .SDcols = (colnames_vector)]
-references.full.dt[, (colnames_vector):= lapply(.SD, str_squish), .SDcols = (colnames_vector)]
-
-# Lowercaps --------------------------------------------------------------------
-
-references.full.dt[, (colnames_vector):= lapply(.SD, tolower), .SDcols = (colnames_vector)]
-
-# Remove multiple spaces -------------------------------------------------------
-
-references.full.dt[, (colnames_vector):= lapply(.SD, function(x) 
-  gsub("\\s+", " ", x)), .SDcols = (colnames_vector)]
-
-# Correct America --------------------------------------------------------------
-
-references.full.dt[, region:= ifelse(region == "america", "americas", region)]
-
-# Extract the publication year -------------------------------------------------
-
-references.full.dt[, publication.date:= str_extract(author, "\\d{4}")] %>%
-  .[, publication.date:= as.numeric(publication.date)]
+iww_dataset <- fread("iww_dataset.csv")
 ```
 
 ```{r naomi_features, dependson="naomi_data", fig.height=1.8, fig.width=2}
@@ -146,44 +112,41 @@ target_year <- c(2000, 2010, 2050, 2070, 2100)
 
 # Name of different studies ----------------------------------------------------
 
-sort(unique(references.full.dt[variable == "iww" & region == "global", title]))
+sort(unique(iww_dataset[, title]))
 
 # Number of data points --------------------------------------------------------
 
-nrow(references.full.dt[variable == "iww" & region == "global"])
+nrow(iww_dataset)
 
 # Number of different studies per variable ---------------------------------------
 
-references.full.dt[region == "global", unique(title), variable] %>%
+iww_dataset[, unique(title), variable] %>%
   .[, .N, variable]
 
 # Number of data points for each target year -----------------------------------
 
-references.full.dt[variable == "iww" & region == "global" & 
-                     estimation.year %in% target_year, .N, estimation.year]
+iww_dataset[estimation.year %in% target_year, .N, estimation.year]
 
 # Number of unique studies estimating for each target year ---------------------
 
-references.full.dt[variable == "iww" & region == "global" & 
-                     estimation.year %in% target_year, unique(title), estimation.year] %>%
+iww_dataset[estimation.year %in% target_year, unique(title), estimation.year] %>%
   .[, .N, estimation.year]
 
 # Number of data points for every targeted year --------------------------------
 
-references.full.dt[variable == "iww" & region == "global", .N, estimation.year] %>%
+iww_dataset[, .N, estimation.year] %>%
   .[order(estimation.year)]
 
 # Number of data points for year 2000 or later years ---------------------------
 
-references.full.dt[variable == "iww" & region == "global", .N, estimation.year] %>%
+iww_dataset[, .N, estimation.year] %>%
   .[estimation.year >= 2000] %>%
   .[, N] %>%
   sum(.)
 
 # Cumulative sum of published studies ------------------------------------------
 
-cumulative.iww <- references.full.dt[, .(title, publication.date, variable)] %>%
-  .[variable == "iww"] %>%
+cumulative.iww <- iww_dataset[, .(title, publication.date, variable)] %>%
   .[!duplicated(.)] %>%
   setorder(., publication.date) %>%
   .[, .N, publication.date] %>%
@@ -202,7 +165,7 @@ cumulative.iww
 
 # DISTRIBUTION OF DATA POINTS THROUGH YEARS @####################################
 
-plot.bar <- references.full.dt[variable == "iww" & region == "global", .N, estimation.year] %>%
+plot.bar <- iww_dataset[, .N, estimation.year] %>%
   ggplot(., aes(estimation.year, N)) +
   geom_bar(stat = "identity") +
   scale_x_continuous(breaks = breaks_pretty(n = 3)) +
@@ -218,7 +181,7 @@ plot.bar
 
 def.alpha <- 0.2
 
-plot.iww <- references.full.dt[variable == "iww" & region == "global"] %>%
+plot.iww <- iww_dataset %>%
   .[, .(author, study, estimation.year, value)] %>%
   na.omit() %>%
   ggplot(., aes(estimation.year, value, color = author, group = study)) +
@@ -237,7 +200,7 @@ plot.iww
 
 ```{r plot_animation, dependson="plot_naomi", eval=FALSE, echo=FALSE}
 
-animated_plot <- references.full.dt[variable == "iww" & region == "global"] %>%
+animated_plot <- iww_dataset %>%
   .[, .(author, study, estimation.year, value, publication.date)] %>%
   na.omit() %>%
   ggplot(., aes(estimation.year, value, color = author, group = study)) +
@@ -269,7 +232,7 @@ image_write_gif(animation, 'animation.gif')
  
 # PLOT NUMBER OF UNIQUE STUDIES PER MODEL ######################################
 
-plot.models <- references.full.dt[variable == "iww" & region == "global"] %>%
+plot.models <- iww_dataset %>%
   .[, .(title, doi, model)] %>%
   .[, model:= tolower(model)] %>%
   .[, unique(doi), model] %>%
@@ -545,17 +508,13 @@ nrow(forking_paths)
 
 # RUN MODEL ####################################################################
 
-# Select only simulations at the global level of iww ---------------------------
-
-dt <- references.full.dt[variable == "iww" & region == "global"]
-
 # Run simulations --------------------------------------------------------------
 
 trend <- list()
 
 for (i in 1:nrow(forking_paths)) {
   
-  trend[[i]] <- forking_paths_fun(dt = dt,
+  trend[[i]] <- forking_paths_fun(dt = iww_dataset,
                                   target_year = forking_paths[[i, "target_year"]], 
                                   target_year_interval = forking_paths[[i, "target_year_interval"]],
                                   interval = forking_paths[[i, "interval"]], 

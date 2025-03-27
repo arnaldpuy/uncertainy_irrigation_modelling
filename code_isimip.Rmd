@@ -474,6 +474,173 @@ bottom <- plot_grid(all.legends2, plots.anova, ncol = 1, rel_heights = c(0.1, 0.
 plot_grid(top, bottom, ncol = 1, rel_heights = c(0.4, 0.6))
 ```
 
+```{r plot_variance_global}
+
+isimip.full <- isimip.dt[social == "varsoc"][, context:= "historic"] %>%
+  rbind(., isimip.future.dt[, context:= "prediction"], fill = TRUE) %>%
+  .[, social:= NULL] 
+
+isimip.anova <- isimip.full[, .(estimation = sum(V1)), 
+                            .(climate, context, forcing, 
+                              scenario, socio.conditions, model, year)]
+
+# ARRANGE DATA #################################################################
+
+columns_to_factor <- c("climate", "model", "scenario", "socio.conditions", "forcing")
+isimip.full[, (columns_to_factor):= lapply(.SD, as.factor), .SDcols = (columns_to_factor)]
+isimip.anova[, (columns_to_factor):= lapply(.SD, as.factor), .SDcols = (columns_to_factor)]
+
+# RUN MODEL AND ANALYSIS OF VARIANCE ###########################################
+
+# List of models ---------------------------------------------------------------
+
+functions <- list(lmm = lmm_fun,
+                  gamm = gamm_fun,
+                  rf = rf_fun, 
+                  bayes = bayes_fun)
+
+# Apply each function to the data and combine results ---------------------------
+
+vector.simulation <- c("prediction", "historic")
+
+out <- list()
+
+for (i in seq_along(vector.simulation)) {
+  
+  extended <- vector.simulation[i] == "prediction"
+  
+  out[[i]] <- mclapply(names(functions), function(fun_name) {
+    
+    isimip.anova[context == vector.simulation[i], functions[[fun_name]](.SD, extended = extended)]
+  }, mc.cores = detectCores() * 0.75)
+  
+}
+
+# PLOT RESULTS ##################################################################
+
+out
+
+results.dt <- rbindlist(lapply(seq_along(out), function(i) {
+  
+  rbindlist(lapply(seq_along(out[[i]]), function(j) {
+    
+    dt <- out[[i]][[j]]
+    dt[, `:=`(context = vector.simulation[i], Function = names(functions)[j])]
+    return(dt)
+    
+  }), fill = TRUE) 
+  
+}), fill = TRUE)
+
+a <- isimip.full[, .(estimation = sum(V1)), .(model, climate, year, 
+                                              context, forcing, scenario, 
+                                              socio.conditions)] %>%
+  .[, group:= paste(model, climate, forcing, scenario, socio.conditions, sep = ".")] %>%
+  ggplot(., aes(year, estimation, color = model, group = group)) +
+  geom_line() +
+  facet_wrap(~context, scale = "free", ncol = 5) +
+  scale_x_continuous(breaks = breaks_pretty(n = 2)) +
+  scale_y_continuous(breaks = breaks_pretty(n = 3)) +
+  theme_AP() +
+  guides(colour = guide_legend(nrow = 1)) +
+  scale_color_manual(values=wes_palette("Zissou1Continuous", n = 7)) +
+  labs(x = "Year", y = bquote("IWW (km"^3 * ")"))  +
+  theme(legend.position = "none", 
+        legend.box.spacing = unit(0, "pt"))
+
+fwrite(results.dt, "results_isimip_variance.csv")
+
+plot_data <- results.dt %>%
+  melt(., measure.vars = c("climate_variance", "model_variance", "scenario_variance", 
+                           "socio_conditions_variance", "random_variance", 
+                           "residual_variance" )) %>%
+  .[, .(min = min(value, na.rm = TRUE), 
+        max = max(value, na.rm = TRUE)), .(context, variable)] %>%
+  .[, variance:= tstrsplit(variable, "_", fixed = TRUE)[[1]]] %>%
+  .[, mean:= (min + max) / 2]
+
+# Create order based on descending mean across all contexts --------------------
+
+variance_order <- plot_data[, .(avg = mean(mean, na.rm = TRUE)), variance] %>%
+  .[order(-avg), variance]
+
+# Convert to factor with desired order -----------------------------------------
+
+plot_data[, variance := factor(variance, levels = variance_order)]
+
+b <- ggplot(plot_data, aes(x = variance, ymin = min, ymax = max, y = mean)) +
+  geom_errorbar(width = 0.2) +
+  geom_point(size = 1) +
+  labs(x = "", y = "Fraction variance") +
+  facet_wrap(~context, ncol = 1) +
+  scale_y_continuous(breaks = scales::breaks_pretty(n = 3)) +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  theme_AP() +
+  theme(legend.position = "none")
+
+plots.anova <- plot_grid(a, b, ncol = 2, labels = c("b", "c"), rel_widths = c(0.7, 0.3))
+plots.anova
+
+
+# COUNT COMBINATIONS OF MODEL AND CLIMATE #######################################
+
+plot.tile1 <- unique(isimip.full[, .(model, climate, context)]) %>%
+  ggplot(., aes(x = model, y = climate, fill = context)) +
+  geom_tile(color = "white", size = 0.5) +
+  scale_fill_manual(values = c("historic" = "steelblue", "prediction" = "orange")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Model", y = "Climate", fill = "simulation") +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  theme_AP() +
+  theme(legend.position = "none")
+
+plot.tile2 <- unique(isimip.full[, .(model, scenario, context, socio.conditions)]) %>%
+  na.omit() %>%
+  ggplot(., aes(x = model, y = scenario, fill = socio.conditions)) +
+  geom_tile(color = "white", size = 0.5) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Model", y = "Scenario", fill = "social conditions") +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  theme_AP() +
+  theme(legend.position = "none")
+
+plot.tile3 <- unique(isimip.full[, .(model, climate, scenario, context, socio.conditions)]) %>%
+  na.omit() %>%
+  ggplot(., aes(x = socio.conditions, y = scenario)) +
+  geom_tile(color = "white", size = 0.5) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Social conditions", y = "Scenario") +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  theme_AP() +
+  theme(legend.position = "none")
+
+all.tiles <- plot_grid(plot.tile1, plot.tile2, plot.tile3, ncol = 3, 
+                       rel_widths = c(0.4, 0.3, 0.3), labels = c("a", "", ""))
+all.tiles
+```
+
+```{r plot_variance_plots_final, fig.width=5.5, fig.height=4, dependson="plot_variance_global"}
+
+# MERGE PLOTS ##################################################################
+
+legend1 <- get_legend_fun(plot.tile1 + theme(legend.position = "top"))
+legend2 <- get_legend_fun(plot.tile2 + theme(legend.position = "top"))
+
+legend3 <- get_legend_fun(a + theme(legend.position = "top"))
+legend4 <- get_legend_fun(b + theme(legend.position = "top"))
+
+all.legends1 <- plot_grid(legend1, legend2, ncol = 2)
+top <- plot_grid(all.legends1, all.tiles, ncol = 1, rel_heights = c(0.1, 0.9))
+
+all.legends2 <- plot_grid(legend3, legend4, ncol = 1)
+bottom <- plot_grid(all.legends2, plots.anova, ncol = 1, rel_heights = c(0.1, 0.9))
+
+plot_grid(top, bottom, ncol = 1, rel_heights = c(0.45, 0.55))
+```
+
 
 # Khan et al dataset
 

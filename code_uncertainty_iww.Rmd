@@ -99,7 +99,7 @@ lapply(r_functions, source)
 
 # LOAD THE DATASET #############################################################
 
-iww_dataset <- fread("iww_dataset.csv")
+iww_dataset <- fread("./dataset/iww_dataset.csv")
 ```
 
 ```{r naomi_features, dependson="naomi_data", fig.height=1.8, fig.width=2}

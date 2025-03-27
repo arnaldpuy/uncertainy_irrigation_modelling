@@ -31,13 +31,9 @@ We provide all the functions needed to replicate our workflow in the "functions"
 
 #### Generated data
 
-The "data" folder contains the data and files produced in this study. The file named
-`current` compiles studies whose water estimates are either historical or current.
-The file named `projected` includes studies with water-related variables projected 
-into the future.
+The "dataset" folder contains the data produced in this study. 
 
-* `references_current.xlsx`   
-* `references_projected.xlsx`   
+* `iww_dataset.csv`   
 
 #### Secondary data
 

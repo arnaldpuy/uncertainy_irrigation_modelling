@@ -47,7 +47,7 @@ selected.palette <- "Darjeeling1"
 
 ## ----source_functions, warning=FALSE, message=FALSE, results="hide"----------------------------------------------------------------
 
-# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ##################################
+# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ###################################
 
 # Source all .R files in the "functions" folder --------------------------------
 
@@ -60,7 +60,7 @@ lapply(r_functions, source)
 
 # LOAD THE DATASET #############################################################
 
-iww_dataset <- fread("iww_dataset.csv")
+iww_dataset <- fread("./dataset/iww_dataset.csv")
 
 
 ## ----naomi_features, dependson="naomi_data", fig.height=1.8, fig.width=2-----------------------------------------------------------
@@ -611,6 +611,43 @@ plot.fraction <- final.dt[, .(total = .N), trend] %>%
         legend.position = "right")
 
 plot.fraction 
+
+
+## ----directional_analysis, dependson="forking_paths", fig.height=1.8, fig.width=4.5------------------------------------------------
+
+# CHECK DIRECTIONAL TRENDS BETWEEN UNCERTAINTY AND NUMBER OF STUDIES, ESTIMATES
+# AND MODELS ###################################################################
+
+data_aggregated <- lapply(trend, function(x) x[["data_aggregated"]])
+
+# Apply function --------------------------------------------------------------
+
+directional_results <- rbindlist(
+  
+  lapply(seq_along(data_aggregated), function(i) {
+    
+    directional_trends_fun(data_aggregated[[i]], dataset_id = paste0("dataset_", i))
+  }),
+  
+  fill = TRUE
+)
+
+# Summary ----------------------------------------------------------------------
+
+directional_results[, .(avg_agreement_studies = mean(studies, na.rm = TRUE),
+                        avg_agreement_estimates = mean(estimates, na.rm = TRUE),
+                        avg_agreement_models = mean(models, na.rm = TRUE))]
+
+# Plot -------------------------------------------------------------------------
+
+directional_results %>%
+  melt(., measure.vars = c("studies", "estimates", "models")) %>%
+  .[, variable:= paste("Nº", variable, sep = " ")] %>%
+  ggplot(., aes(value)) +
+  geom_histogram() +
+  facet_wrap(~variable) +
+  theme_AP() +
+  labs(x = "Percentage of agreement with the uncertainty trend", y = "Nº paths")
 
 
 ## ----random_forest, dependson=c("naomi_arrange", "forking_paths"), fig.width=3.5, fig.height=2-------------------------------------

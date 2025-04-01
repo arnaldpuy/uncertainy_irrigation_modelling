@@ -3,7 +3,7 @@
 
 # Fifty years of research have deepened uncertainties in global irrigation water use
 
-[Arnald Puy](https://www.arnaldpuy.com/), Carmen Aguiló, Seth N. Linga, Naomi Clarke, Lieke A. Melsen
+[Arnald Puy](https://www.arnaldpuy.com/), Carmen Aguiló-Rivera, Seth N. Linga, Naomi Clarke, Lieke A. Melsen
 
 This study compiles 1,624 global irrigation water withdrawal estimates (1990–2100) 
 from literature published between 1974 and 2025 and analyzes the uncertainty spread 

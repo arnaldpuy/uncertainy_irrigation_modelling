@@ -51,7 +51,17 @@ user of the code does not need to source them separately.
 
 ### Code
 
-We offer the code in `.R`, `.pdf` and `.Rmd`. Our entire workflow can be run and the 
+We offer the code in `.R`, `.pdf` and `.Rmd`. There are two main analyses:
+
+* `code_uncerainty_iww`: it includes the workflow and the results of the multiverse
+analysis conducted to explore whether 50 years of dataset and model refinement
+have reduced uncertainties in irrigation water withdrawals.
+
+* `code_isimip`: it includes the exploratory analysis of variance on ISIMIP data
+to check which source of uncertainty (model, climate scenario, socio-economic scenario
+or climate forcing) conveys the most uncertainty to the estimation.
+
+Our entire workflow can be run and the 
 results replicated from either of these files. The user must run the code from the 
 same folder where the files in the generated data section are stored for a successful 
 compilation.

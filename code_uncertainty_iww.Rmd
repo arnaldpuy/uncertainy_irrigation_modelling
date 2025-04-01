@@ -243,6 +243,7 @@ plot.models <- iww_dataset %>%
   geom_bar(stat = "identity") + 
   labs(x = "", y = "Nº studies") +
   coord_flip() +
+  scale_y_continuous(breaks = breaks_pretty()) +
   theme_AP() + 
   theme(axis.text.y = element_text(size = 5.5))
 

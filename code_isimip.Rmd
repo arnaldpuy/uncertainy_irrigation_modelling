@@ -1,6 +1,6 @@
 ---
-title: "Uncertainty in global irrigation water use persists after 50 years of research"
-subtitle: "R code of the ISIMIP data analysis"
+title: "Fifty years of research have deepened uncertainties in global irrigation water use"
+subtitle: "R code of the analysis of variance (ISI-MIP data)"
 author: "Arnald Puy"
 header-includes:
   - \usepackage[font=footnotesize]{caption}

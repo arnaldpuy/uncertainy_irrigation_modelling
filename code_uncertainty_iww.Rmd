@@ -144,6 +144,19 @@ iww_dataset[, .N, estimation.year] %>%
   .[, N] %>%
   sum(.)
 
+# Min and max values for the target_years based on literature ------------------
+
+iww_dataset[, .(min = min(value), max = max(value)), estimation.year] %>%
+  .[estimation.year %in% target_year] %>%
+  .[order(estimation.year)]
+
+# Min and max values for the target_years based on literature 
+# (Excluding pre-2000 studies) -------------------------------------------------
+
+iww_dataset[publication.date >2000, .(min = min(value), max = max(value)), estimation.year] %>%
+  .[estimation.year %in% target_year] %>%
+  .[order(estimation.year)]
+
 # Cumulative sum of published studies ------------------------------------------
 
 cumulative.iww <- iww_dataset[, .(title, publication.date, variable)] %>%

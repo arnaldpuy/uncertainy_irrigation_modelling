@@ -910,7 +910,7 @@ plot.sa.facet <- final.dt %>%
   scale_fill_manual(values = selected_colors, name = "Uncertainty") +
   geom_bar(stat = "identity", position = position_dodge(0.5)) +
   facet_wrap(~variable, scale = "free", ncol = 1) +
-  labs(x = "", y = "Nº simulations") +
+  labs(x = "", y = "Nº paths") +
   scale_y_continuous(breaks = breaks_pretty(n = 3)) +
   theme_AP() + 
   coord_flip() +

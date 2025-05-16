@@ -33,7 +33,12 @@ We provide all the functions needed to replicate our workflow in the "functions"
 
 The "dataset" folder contains the data produced in this study. 
 
-* `iww_dataset.csv`   
+* `iww_dataset.csv`: all irrigation water withdrawal data points compiled and examined in our paper.
+
+* `model_and_dataset_updates.xlsx`: the most important refinements and updates 
+implemented over the last thirty years in the irrigation module of nine global models
+(CLM, PCR-GLOBWB, VIC, WaterGAP,WBMPlus, H08, LPJmL, MATSIRO and MPI-HM) and in 
+three key irrigation datasets (irrigation efficiency, crop type and irrigated area).
 
 #### Secondary data
 

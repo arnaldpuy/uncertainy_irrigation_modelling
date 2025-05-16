@@ -58,7 +58,7 @@ user of the code does not need to source them separately.
 
 We offer the code in `.R`, `.pdf` and `.Rmd`. There are two main analyses:
 
-* `code_uncerainty_iww`: it includes the workflow and the results of the multiverse
+* `code_uncertainty_iww`: it includes the workflow and the results of the multiverse
 analysis conducted to explore whether 50 years of dataset and model refinement
 have reduced uncertainties in irrigation water withdrawals.
 

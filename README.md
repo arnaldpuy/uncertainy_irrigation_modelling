@@ -11,17 +11,17 @@ to determine whether it has increased or decreased over time.
 
 ## Abstract
 
-*For fifty years, refining models and datasets has been central to reducing 
-uncertainties in the quantification of global irrigation water use. However, 
-whether these efforts have delivered remains unclear. Here we compile 1,624 
-global irrigation water withdrawal estimates from 65 studies (1974-2025) and 
-examine them through 320 different possible analytical pipelines to ensure 
-robustness of results. Our analysis reveals strong evidence that, rather than 
-reducing uncertainties, research has actually amplified them or made them 
-unstable. Only 20\% of analytical pathways suggest a decline in uncertainty 
-over time, dropping to 10\% when excluding projections for 2100. Our findings 
-suggest that embracing uncertainty may be a better strategy than chasing 
-precision to improve our understanding of global irrigation water use.*
+*For five decades, improving models and datasets has been central to reducing uncertainty 
+in global irrigation water withdrawal estimates. However, whether these efforts have 
+succeeded remains unclear. Here we compile 1,624 global estimates from 65 studies 
+published between 1974 and 2025, and evaluate them across 320 analytical pathways in a
+multiverse analysis framework. Contrary to expectations, our results show that uncertainty 
+in global irrigation water withdrawals has not declined but has instead increased or 
+become more unstable. Only 17% of analytical paths show a decline in uncertainty over 
+time, falling to 10% when projections for 2100 are excluded. Our study thus suggests 
+that uncertainties are likely to persist despite further research, and that embracing 
+rather than attempting to dispel them may offer a stronger, more robust understanding 
+of global irrigation water use.*
 
 ## Replication
 

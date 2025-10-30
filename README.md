@@ -3,7 +3,8 @@
 
 # Fifty years of research have deepened uncertainties in global irrigation water use
 
-[Arnald Puy](https://www.arnaldpuy.com/), Carmen Aguiló-Rivera, Seth N. Linga, Naomi Clarke, Lieke A. Melsen
+[Arnald Puy](https://www.arnaldpuy.com/), Carmen Aguiló-Rivera, Seth N. Linga, Naomi Clarke, Olivia Richards, 
+Samuel Flinders and Lieke A. Melsen
 
 This study compiles 1,624 global irrigation water withdrawal estimates (1990–2100) 
 from literature published between 1974 and 2025 and analyzes the uncertainty spread 
@@ -39,6 +40,9 @@ The "dataset" folder contains the data produced in this study.
 implemented over the last thirty years in the irrigation module of nine global models
 (CLM, PCR-GLOBWB, VIC, WaterGAP,WBMPlus, H08, LPJmL, MATSIRO and MPI-HM) and in 
 three key irrigation datasets (irrigation efficiency, crop type and irrigated area).
+
+* `list_of_studies.xlsx`: information on uncertainty and sensitivity analysis
+practices, calls to reduce uncertainty and goals of each study forming our corpus.
 
 #### Secondary data
 

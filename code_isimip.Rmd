@@ -622,7 +622,7 @@ all.tiles <- plot_grid(plot.tile1, plot.tile2, plot.tile3, ncol = 3,
 all.tiles
 ```
 
-```{r plot_variance_plots_final, fig.width=5.5, fig.height=4, dependson="plot_variance_global"}
+```{r plot_variance_plots_final, fig.width=6, fig.height=4, dependson="plot_variance_global"}
 
 # MERGE PLOTS ##################################################################
 

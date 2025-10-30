@@ -75,14 +75,14 @@ theme_AP <- function() {
           strip.text.y = element_text(size = 7.4)) 
 }
 
-# Select color palette ----------------------------------------------------------
+# Select color palette ---------------------------------------------------------
 
 selected.palette <- "Darjeeling1"
 ```
 
 ```{r source_functions, warning=FALSE, message=FALSE, results="hide"}
 
-# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ###################################
+# SOURCE ALL R FUNCTIONS NEEDED FOR THE STUDY ##################################
 
 # Source all .R files in the "functions" folder --------------------------------
 
@@ -172,11 +172,44 @@ cumulative.iww <- iww_dataset[, .(title, publication.date, variable)] %>%
   labs(x = "Publication year", y = "Nº studies")
 
 cumulative.iww
+
+# Cumulative sum with count of UA / SA studies ---------------------------------
+
+cumulative.iww.data <- iww_dataset[, .(title, publication.date, variable)] %>%
+  .[!duplicated(.)] %>%
+  setorder(., publication.date) %>%
+  .[, .N, publication.date] %>%
+  .[, cumulative_sum := cumsum(N)] %>%
+  .[, type:= "total"]
+
+cumulative.ua.sa.data <- data.table(read.xlsx("./dataset/list_of_studies.xlsx")) %>%
+  .[, .N, .(publication.date, UA.approach, SA.approach)] %>%
+  melt(., measure.vars = c("UA.approach", "SA.approach")) %>%
+  .[value == "yes", cumulative_sum := cumsum(N), variable] %>%
+  na.omit() %>%
+  .[, type:= ifelse(variable == "UA.approach", "with UA", "with UA/SA")] %>%
+  .[, .(publication.date, N, cumulative_sum, type)]
+
+cumulative.iww.plot.uasa <- rbind(cumulative.iww.data, cumulative.ua.sa.data) %>%
+  ggplot(., aes(publication.date, cumulative_sum, color = type)) +
+  geom_line() + 
+  scale_x_continuous(breaks = breaks_pretty(n = 3)) +
+  geom_point(size = 0.7) + 
+  scale_color_manual(values = c("total" = "black", "with UA" = "turquoise", 
+                                "with UA/SA" = "blue"), 
+                     breaks = c("total", "with UA", "with UA/SA"), 
+                     name = "") +
+  theme_AP() + 
+  theme(legend.position = c(0.3, 0.85), 
+        legend.text = element_text(size = 6)) +
+  labs(x = "Publication year", y = "Nº studies")
+
+cumulative.iww.plot.uasa
 ```
 
 ```{r histogram_data_points, dependson="naomi_data", fig.height=2, fig.width=2}
 
-# DISTRIBUTION OF DATA POINTS THROUGH YEARS @####################################
+# DISTRIBUTION OF DATA POINTS THROUGH YEARS @###################################
 
 plot.bar <- iww_dataset[, .N, estimation.year] %>%
   ggplot(., aes(estimation.year, N)) +
@@ -190,7 +223,7 @@ plot.bar
 
 ```{r plot_naomi, dependson="naomi_data", fig.height=3.5, fig.width=6}
 
-# PLOT ALL ESTIMATIONS ##########################################################
+# PLOT ALL ESTIMATIONS #########################################################
 
 def.alpha <- 0.2
 
@@ -267,7 +300,7 @@ plot.models
 
 ```{r plot_examples, fig.height=3, fig.width=1.5}
 
-# PLOT EXAMPLES TO ILLUSTRATE APPROACH #########################################
+# PLOT EXAMPLES TO ILLUSTRATE APPROACH ##########################################
 
 # Set seed for reproducibility -------------------------------------------------
 
@@ -487,7 +520,7 @@ plot_grid(one.path, all.paths, ncol = 2, labels = c("a", ""))
 
 # DEFINE THE UNCERTAINTY SPACE #################################################
 
-# Target year ------------------------------------------------------------------
+# Target year -----------------------------------------------------------------
 
 ## Defined above
 
@@ -876,7 +909,7 @@ heat.tree(tree_model, type = 2, extra = 100, gap = 0, fallen.leaves = FALSE,
 
 ```{r faceted_plot3, dependson = c("plot_naomi", "merge_fraction_rf", "random_forest", "forking_paths", "plot_results_forking_paths", "examples_plots", "plot.models", "plot_examples", "histogram_data_points"), fig.height=6.5, fig.width=5.5}
 
-left <- plot_grid(cumulative.iww, plot.bar, ncol = 1, labels = c("b", "c"))
+left <- plot_grid(cumulative.iww.plot.uasa, plot.bar, ncol = 1, labels = c("b", "c"))
 bottom <- plot_grid(left, plot.models, ncol = 2, labels = c("", "d"), rel_widths = c(0.4, 0.6))
 bottom.right <- plot_grid(bottom, plot.examples.trends.data, ncol = 2, rel_widths = c(0.7, 0.3))
 plot_grid(plot.iww, bottom.right, ncol = 1, rel_heights = c(0.5, 0.5), labels = c("a", ""))
@@ -887,7 +920,7 @@ plot_grid(plot.iww, bottom.right, ncol = 1, rel_heights = c(0.5, 0.5), labels = 
 # MERGE SA ######################################################################
 
 plot.examples.trends.data <-plot_grid(p1, p2, p3, ncol = 1)
-left <- plot_grid(cumulative.iww, plot.bar, ncol = 1, labels = c("b", "c"))
+left <- plot_grid(cumulative.iww.plot.uasa, plot.bar, ncol = 1, labels = c("b", "c"))
 forking.paths <- plot_grid(one.path, all.paths, ncol = 1)
 bottom <- plot_grid(left, plot.models, forking.paths, ncol = 3, labels = c("", "d", "e"), 
                     rel_widths = c(0.33, 0.4, 0.26))
@@ -1129,7 +1162,13 @@ p3 <- tmp %>%
 
 da <- get_legend_fun(p.withoutline + theme(legend.position = "top"))
 di <- plot_grid(p1 + guides(color = "none"), p2,p3, ncol = 3, labels = "auto")
-plot_grid(da, di, rel_heights = c(0.1, 0.9), ncol = 1)
+plot.unc <- plot_grid(da, di, rel_heights = c(0.1, 0.9), ncol = 1)
+plot.unc
+```
+
+```{r merge_plot_unc, dependson=c("check_metric_effect", "merge_rf"), fig.height=4.5, fig.width=5.5}
+
+plot_grid(plot.unc, plotp1, ncol = 1, labels = c("", "d"))
 ```
 
 \newpage
